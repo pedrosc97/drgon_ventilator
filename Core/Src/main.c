@@ -132,6 +132,9 @@ int main(void)
   MX_ADC1_Init();
   MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
+  DCMotorInit(&dc_motor, &htim1);
+  EncoderInit(&motor_encoder, SD_MODEL);
+  LCDInit(&lcd_display, &hi2c2);
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -463,7 +466,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM3_Init 2 */
-
+  HAL_TIM_Encoder_Start_IT(&htim3, htim3.Channel);
   /* USER CODE END TIM3_Init 2 */
 
 }
@@ -527,7 +530,6 @@ void startMasterTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  printf("DefaultTask");
 	  osDelay(1000);
   }
   /* USER CODE END 5 */ 
@@ -554,7 +556,7 @@ void startMotorRoutine(void const * argument)
 		}
 		else if (pwm_value == MOTOR_MAX_PWM_PULSE)
 		{
-			pwm_step = MOTOR_NEGATIVE_PWM_STEP;
+			pwm_step = -MOTOR_NEGATIVE_PWM_STEP;
 		}
 
 		pwm_value += pwm_step;
@@ -596,7 +598,11 @@ void startDisplayUpdate(void const * argument)
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 1, 0);
-		sprintf(buffer, "RPM: %lu    ", (int32_t) motor_encoder.rpm);
+		sprintf(buffer, "CNT: %lu    ", TIM3->CNT);
+		LCDSendString(&lcd_display, buffer);
+
+		LCDSetCursorPos(&lcd_display, 2, 0);
+		sprintf(buffer, "RPM: %ld    ", (int32_t) motor_encoder.rpm);
 		LCDSendString(&lcd_display, buffer);
 
 		osDelayUntil(&PreviousWakeTime, LCD_DISPLAY_UPDATE_TIMESTEP_MS);
@@ -619,7 +625,7 @@ void startEncoderRPM(void const * argument)
   /* Infinite loop */
 	for(;;)
 	{
-		UpdateEncoderParams(&motor_encoder, TIM3->CNT, RPM_CALCULATE_TIMESTEP_MS)
+		UpdateEncoderParams(&motor_encoder, TIM3->CNT, RPM_CALCULATE_TIMESTEP_MS);
 		osDelayUntil(&PreviousWakeTime, RPM_CALCULATE_TIMESTEP_MS);
 	}
   /* USER CODE END startEncoderRPM */

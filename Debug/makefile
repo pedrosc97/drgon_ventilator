@@ -45,7 +45,7 @@ all: drgon_ventilator.elf secondary-outputs
 
 # Tool invocations
 drgon_ventilator.elf: $(OBJS) $(USER_OBJS) C:\Users\pedro\Documents\DRGON01\drgon_ventilator\STM32F103C8TX_FLASH.ld
-	arm-none-eabi-gcc -o "drgon_ventilator.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\pedro\Documents\DRGON01\drgon_ventilator\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="drgon_ventilator.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "drgon_ventilator.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\pedro\Documents\DRGON01\drgon_ventilator\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="drgon_ventilator.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
