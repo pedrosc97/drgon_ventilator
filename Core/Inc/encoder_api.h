@@ -11,6 +11,7 @@
 #define OVERLOADED_16_BIT		0xFFFF
 #define MILISECONDS_PER_SECOND	1000
 #define SECONDS_PER_MINUTE		60
+#define RPM_LPF_THRESHOLD		150
 
 #include "stm32f1xx_hal.h"
 
@@ -25,7 +26,6 @@ typedef struct Encoder_S
 	float				rpm;
 	EncoderModel_E		model;
 	uint16_t			prev_pulse_count;
-	volatile uint8_t	revolution_count;
 } Encoder_S;
 
 void EncoderInit(Encoder_S *encoder_, EncoderModel_E model_);
