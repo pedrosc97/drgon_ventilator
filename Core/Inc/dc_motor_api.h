@@ -16,6 +16,8 @@ typedef struct DCMotor_S
 	TIM_HandleTypeDef 	*motor_pwm_ctrl;
 	uint16_t			cw_gpio_pin;
 	uint16_t			ccw_gpio_pin;
+	uint16_t 			pwm_value;
+	uint8_t				direction_flag;
 } DCMotor_S;
 
 typedef enum
@@ -26,7 +28,7 @@ typedef enum
 } DCMotorDirection_E;
 
 void DCMotorInit(DCMotor_S *dc_motor_, TIM_HandleTypeDef *timer_handler_);
-void DCMotorRPMSet(DCMotor_S *dc_motor_, uint16_t rpm_, DCMotorDirection_E direction_);
+void DCMotorRPMSet(DCMotor_S *dc_motor_);
 void DCMotorRPMStop(DCMotor_S *dc_motor_);
 
 #endif /* INC_DC_MOTOR_API_H_ */

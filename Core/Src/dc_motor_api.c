@@ -11,14 +11,16 @@
 void DCMotorInit(DCMotor_S *dc_motor_, TIM_HandleTypeDef *timer_handler_)
 {
 	dc_motor_->motor_pwm_ctrl = timer_handler_;
+	dc_motor_->pwm_value = 0;
+	dc_motor_->direction_flag = MOTOR_SPIN_CW;
 }
 
-void DCMotorRPMSet(DCMotor_S *dc_motor_, uint16_t rpm_, DCMotorDirection_E direction_)
+void DCMotorRPMSet(DCMotor_S *dc_motor_)
 {
     TIM_OC_InitTypeDef sConfigOC;
 
     sConfigOC.OCMode = TIM_OCMODE_PWM1;
-    sConfigOC.Pulse = rpm_ - 1;
+    sConfigOC.Pulse = dc_motor_->pwm_value - 1;
     sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
     sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
     sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
@@ -27,12 +29,12 @@ void DCMotorRPMSet(DCMotor_S *dc_motor_, uint16_t rpm_, DCMotorDirection_E direc
 
     HAL_TIM_PWM_Stop(dc_motor_->motor_pwm_ctrl, TIM_CHANNEL_1);
 
-    if (direction_ == MOTOR_SPIN_CW)
+    if (dc_motor_->direction_flag == MOTOR_SPIN_CW)
     {
 		HAL_GPIO_WritePin(GPIOB, DC_MOTOR_CW_PIN, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(GPIOB, DC_MOTOR_CCW_PIN, GPIO_PIN_RESET);
     }
-	else if (direction_ == MOTOR_SPIN_CCW)
+	else if (dc_motor_->direction_flag == MOTOR_SPIN_CCW)
 	{
 			HAL_GPIO_WritePin(GPIOB, DC_MOTOR_CW_PIN, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(GPIOB, DC_MOTOR_CCW_PIN, GPIO_PIN_SET);
