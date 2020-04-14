@@ -90,8 +90,8 @@ void Error_Handler(void);
 #define LCD_SDA_GPIO_Port GPIOB
 #define EditBtnIn_Pin GPIO_PIN_12
 #define EditBtnIn_GPIO_Port GPIOB
-#define ZeroSetBtnIn_Pin GPIO_PIN_13
-#define ZeroSetBtnIn_GPIO_Port GPIOB
+#define CalibrationBtnIn_Pin GPIO_PIN_13
+#define CalibrationBtnIn_GPIO_Port GPIOB
 #define AlarmSilenceBtnIn_Pin GPIO_PIN_14
 #define AlarmSilenceBtnIn_GPIO_Port GPIOB
 #define StartStopBtnIn_Pin GPIO_PIN_15

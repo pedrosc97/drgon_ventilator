@@ -552,9 +552,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, MotorCW_Pin|MotorCCW_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : EditBtnIn_Pin ZeroSetBtnIn_Pin AlarmSilenceBtnIn_Pin StartStopBtnIn_Pin */
-  GPIO_InitStruct.Pin = EditBtnIn_Pin|ZeroSetBtnIn_Pin|AlarmSilenceBtnIn_Pin|StartStopBtnIn_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  /*Configure GPIO pins : EditBtnIn_Pin CalibrationBtnIn_Pin AlarmSilenceBtnIn_Pin StartStopBtnIn_Pin */
+  GPIO_InitStruct.Pin = EditBtnIn_Pin|CalibrationBtnIn_Pin|AlarmSilenceBtnIn_Pin|StartStopBtnIn_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
