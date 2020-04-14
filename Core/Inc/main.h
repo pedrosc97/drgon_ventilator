@@ -84,8 +84,6 @@ void Error_Handler(void);
 #define PlaceholderB0_GPIO_Port GPIOB
 #define PlaceholderB1_Pin GPIO_PIN_1
 #define PlaceholderB1_GPIO_Port GPIOB
-#define StartStopBtnIn_Pin GPIO_PIN_2
-#define StartStopBtnIn_GPIO_Port GPIOB
 #define LCD_SCL_Pin GPIO_PIN_10
 #define LCD_SCL_GPIO_Port GPIOB
 #define LCD_SDA_Pin GPIO_PIN_11
@@ -96,12 +94,14 @@ void Error_Handler(void);
 #define ZeroSetBtnIn_GPIO_Port GPIOB
 #define AlarmSilenceBtnIn_Pin GPIO_PIN_14
 #define AlarmSilenceBtnIn_GPIO_Port GPIOB
-#define PowerLEDOut_Pin GPIO_PIN_15
-#define PowerLEDOut_GPIO_Port GPIOB
+#define StartStopBtnIn_Pin GPIO_PIN_15
+#define StartStopBtnIn_GPIO_Port GPIOB
 #define MotorPWMOut_Pin GPIO_PIN_8
 #define MotorPWMOut_GPIO_Port GPIOA
 #define ModeLEDOut_Pin GPIO_PIN_9
 #define ModeLEDOut_GPIO_Port GPIOA
+#define PowerOnLEDOut_Pin GPIO_PIN_10
+#define PowerOnLEDOut_GPIO_Port GPIOA
 #define SYS_DebugSWDIO_Pin GPIO_PIN_13
 #define SYS_DebugSWDIO_GPIO_Port GPIOA
 #define SYS_DebugSWCLK_Pin GPIO_PIN_14
