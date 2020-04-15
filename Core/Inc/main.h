@@ -90,12 +90,16 @@ void Error_Handler(void);
 #define LCD_SDA_GPIO_Port GPIOB
 #define EditBtnIn_Pin GPIO_PIN_12
 #define EditBtnIn_GPIO_Port GPIOB
+#define EditBtnIn_EXTI_IRQn EXTI15_10_IRQn
 #define CalibrationBtnIn_Pin GPIO_PIN_13
 #define CalibrationBtnIn_GPIO_Port GPIOB
+#define CalibrationBtnIn_EXTI_IRQn EXTI15_10_IRQn
 #define AlarmSilenceBtnIn_Pin GPIO_PIN_14
 #define AlarmSilenceBtnIn_GPIO_Port GPIOB
+#define AlarmSilenceBtnIn_EXTI_IRQn EXTI15_10_IRQn
 #define StartStopBtnIn_Pin GPIO_PIN_15
 #define StartStopBtnIn_GPIO_Port GPIOB
+#define StartStopBtnIn_EXTI_IRQn EXTI15_10_IRQn
 #define MotorPWMOut_Pin GPIO_PIN_8
 #define MotorPWMOut_GPIO_Port GPIOA
 #define ModeLEDOut_Pin GPIO_PIN_9
