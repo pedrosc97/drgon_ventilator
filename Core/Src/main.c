@@ -44,7 +44,6 @@
 /* USER CODE BEGIN PM */
 
 /* Configuration for the DC Motor test routine */
-#define MOTOR_UPDATE_TIMESTEP_MS			1000
 #define MOTOR_MAX_PWM_PULSE					4800
 #define MOTOR_MIN_PWM_PULSE					0
 #define MOTOR_POSITIVE_PWM_STEP				100
@@ -54,6 +53,8 @@
 #define RPM_CALCULATE_TIMESTEP_MS			100
 #define LCD_DISPLAY_UPDATE_TIMESTEP_MS		10
 #define POT_CONTROLS_UPDATE_TIMESTEP_MS		1000
+#define ALARM_UPDATE_TIMESTEP_MS			10
+#define ALARM_SILENCE_TIMEOUT_MS			2000
 
 /* USER CODE END PM */
 
@@ -67,18 +68,27 @@ I2C_HandleTypeDef hi2c2;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 
-osThreadId masterTaskHandle;
-osThreadId motorRoutineHandle;
+osThreadId mainRoutineHandle;
 osThreadId displayUpdateHandle;
 osThreadId encoderRPMHandle;
-osThreadId potUpdateHandle;
 osThreadId initTaskHandle;
+osThreadId alarmsTaskHandle;
+osThreadId updatePotsHandle;
 /* USER CODE BEGIN PV */
 
 DCMotor_S 			dc_motor;
 LCDDisplay_S 		lcd_display;
 Encoder_S			motor_encoder;
-Potentiometer_S		pot_controls_a[TOTAL_CONTROLS_COUNT];
+
+volatile Potentiometer_S		pot_controls_a[TOTAL_CONTROLS_COUNT];
+volatile uint8_t	enable_routine;
+volatile uint16_t	main_routine_update_time_ms;
+volatile uint8_t	i_e_ratio;
+volatile uint8_t	silence_alarms;
+
+/* Debugging Variables */
+uint8_t alarm_flag;
+volatile uint8_t calibration_btn = 0;
 
 /* USER CODE END PV */
 
@@ -91,12 +101,12 @@ static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_ADC2_Init(void);
-void startMasterTask(void const * argument);
-void startMotorRoutine(void const * argument);
+void startMainRoutine(void const * argument);
 void startDisplayUpdate(void const * argument);
 void startEncoderRPM(void const * argument);
-void startPotUpdate(void const * argument);
 void startInitTask(void const * argument);
+void startAlarmsTask(void const * argument);
+void startUpdatePots(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -104,6 +114,44 @@ void startInitTask(void const * argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if (GPIO_Pin == EditBtnIn_Pin)
+	{
+		osThreadResume(updatePotsHandle);
+	}
+
+	if (GPIO_Pin == CalibrationBtnIn_Pin)
+	{
+		/* TODO: Calibration Routine Callback Function Implementation */
+		if (calibration_btn == 0)
+		{
+			calibration_btn = 1;
+		}
+		else
+		{
+			calibration_btn = 0;
+		}
+	}
+
+	if (GPIO_Pin == AlarmSilenceBtnIn_Pin)
+	{
+		silence_alarms = 1;
+	}
+
+	if (GPIO_Pin == StartStopBtnIn_Pin)
+	{
+		if (enable_routine == 0)
+		{
+			enable_routine = 1;
+		}
+		else if (enable_routine == 1)
+		{
+			enable_routine = 0;
+		}
+	}
+}
 
 /* USER CODE END 0 */
 
@@ -167,13 +215,9 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* definition and creation of masterTask */
-  osThreadDef(masterTask, startMasterTask, osPriorityAboveNormal, 0, 128);
-  masterTaskHandle = osThreadCreate(osThread(masterTask), NULL);
-
-  /* definition and creation of motorRoutine */
-  osThreadDef(motorRoutine, startMotorRoutine, osPriorityAboveNormal, 0, 128);
-  motorRoutineHandle = osThreadCreate(osThread(motorRoutine), NULL);
+  /* definition and creation of mainRoutine */
+  osThreadDef(mainRoutine, startMainRoutine, osPriorityAboveNormal, 0, 128);
+  mainRoutineHandle = osThreadCreate(osThread(mainRoutine), NULL);
 
   /* definition and creation of displayUpdate */
   osThreadDef(displayUpdate, startDisplayUpdate, osPriorityAboveNormal, 0, 128);
@@ -183,13 +227,17 @@ int main(void)
   osThreadDef(encoderRPM, startEncoderRPM, osPriorityAboveNormal, 0, 128);
   encoderRPMHandle = osThreadCreate(osThread(encoderRPM), NULL);
 
-  /* definition and creation of potUpdate */
-  osThreadDef(potUpdate, startPotUpdate, osPriorityAboveNormal, 0, 128);
-  potUpdateHandle = osThreadCreate(osThread(potUpdate), NULL);
-
   /* definition and creation of initTask */
   osThreadDef(initTask, startInitTask, osPriorityRealtime, 0, 128);
   initTaskHandle = osThreadCreate(osThread(initTask), NULL);
+
+  /* definition and creation of alarmsTask */
+  osThreadDef(alarmsTask, startAlarmsTask, osPriorityAboveNormal, 0, 128);
+  alarmsTaskHandle = osThreadCreate(osThread(alarmsTask), NULL);
+
+  /* definition and creation of updatePots */
+  osThreadDef(updatePots, startUpdatePots, osPriorityRealtime, 0, 128);
+  updatePotsHandle = osThreadCreate(osThread(updatePots), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -424,7 +472,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 80-1;
+  htim1.Init.Period = 4800-1;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -527,7 +575,7 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Channel1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 6, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
 
 }
@@ -552,8 +600,8 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, MotorCW_Pin|MotorCCW_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : EditBtnIn_Pin CalibrationBtnIn_Pin AlarmSilenceBtnIn_Pin StartStopBtnIn_Pin */
-  GPIO_InitStruct.Pin = EditBtnIn_Pin|CalibrationBtnIn_Pin|AlarmSilenceBtnIn_Pin|StartStopBtnIn_Pin;
+  /*Configure GPIO pins : EditBtnIn_Pin CalibrationBtnIn_Pin AlarmSilenceBtnIn_Pin */
+  GPIO_InitStruct.Pin = EditBtnIn_Pin|CalibrationBtnIn_Pin|AlarmSilenceBtnIn_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -565,6 +613,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : StartStopBtnIn_Pin */
+  GPIO_InitStruct.Pin = StartStopBtnIn_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(StartStopBtnIn_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : MotorCW_Pin MotorCCW_Pin */
   GPIO_InitStruct.Pin = MotorCW_Pin|MotorCCW_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -572,73 +626,56 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_startMasterTask */
+/* USER CODE BEGIN Header_startMainRoutine */
 /**
-  * @brief  Function implementing the masterTask thread.
+  * @brief  Function implementing the mainRoutine thread.
   * @param  argument: Not used 
   * @retval None
   */
-/* USER CODE END Header_startMasterTask */
-void startMasterTask(void const * argument)
+/* USER CODE END Header_startMainRoutine */
+void startMainRoutine(void const * argument)
 {
   /* USER CODE BEGIN 5 */
-  /* Infinite loop */
-  for(;;)
-  {
-	  osDelay(1000);
-  }
-  /* USER CODE END 5 */ 
-}
-
-/* USER CODE BEGIN Header_startMotorRoutine */
-/**
-* @brief Function implementing the motorRoutine thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_startMotorRoutine */
-void startMotorRoutine(void const * argument)
-{
-  /* USER CODE BEGIN startMotorRoutine */
 	uint32_t PreviousWakeTime = osKernelSysTick();
-
-	int8_t pwm_step = MOTOR_POSITIVE_PWM_STEP;
 
   /* Infinite loop */
 	for(;;)
 	{
-		if (dc_motor.pwm_value == MOTOR_MIN_PWM_PULSE)
+		if (enable_routine == 1)
 		{
-			pwm_step = MOTOR_POSITIVE_PWM_STEP;
-		}
-		else if (dc_motor.pwm_value == MOTOR_MAX_PWM_PULSE)
-		{
-			pwm_step = -MOTOR_NEGATIVE_PWM_STEP;
-		}
+			dc_motor.pwm_value = (uint16_t) (((float) pot_controls_a[TIDAL_VOLUME_CONTROL].value / (float) 4095) * (float) 4800);
 
-		dc_motor.pwm_value += pwm_step;
-
-		if (dc_motor.direction_flag == MOTOR_SPIN_CW)
-		{
-			DCMotorRPMSet(&dc_motor);
-			dc_motor.direction_flag = MOTOR_SPIN_CW;
+			if (dc_motor.direction_flag == MOTOR_SPIN_CW)
+			{
+				DCMotorRPMSet(&dc_motor);
+				dc_motor.direction_flag = MOTOR_SPIN_CCW;
+			}
+			else
+			{
+				DCMotorRPMSet(&dc_motor);
+				dc_motor.direction_flag = MOTOR_SPIN_CW;
+			}
 		}
 		else
 		{
+			dc_motor.pwm_value = 0;
+			dc_motor.direction_flag = MOTOR_SPIN_STOP;
 			DCMotorRPMSet(&dc_motor);
-			dc_motor.direction_flag = MOTOR_SPIN_CW;
 		}
 
-		uint16_t update_timestep = (pot_controls_a[RESPIRATORY_FREQUENCY_CONTROL].value / 4095) * 1000 + 50;
-		osDelayUntil(&PreviousWakeTime, update_timestep);
+		osDelayUntil(&PreviousWakeTime, main_routine_update_time_ms);
 	}
-  /* USER CODE END startMotorRoutine */
+  /* USER CODE END 5 */ 
 }
 
 /* USER CODE BEGIN Header_startDisplayUpdate */
@@ -657,40 +694,22 @@ void startDisplayUpdate(void const * argument)
   /* Infinite loop */
 	for(;;)
 	{
-
 		LCDSetCursorPos(&lcd_display, 0, 0);
-		sprintf(buffer, "VOL %04lu  PWM %04u", pot_controls_a[TIDAL_VOLUME_CONTROL].value, dc_motor.pwm_value);
+		sprintf(buffer, "VOL %04u  PWM %04u", pot_controls_a[TIDAL_VOLUME_CONTROL].value, dc_motor.pwm_value);
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 1, 0);
-		sprintf(buffer, "I:E %04lu  CNT %04lu", pot_controls_a[I_E_RATIO_CONTROL].value, TIM3->CNT);
+		sprintf(buffer, "RFQ %04u  RPM %+04ld", pot_controls_a[RESPIRATORY_FREQUENCY_CONTROL].value, (int32_t) motor_encoder.rpm);
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 2, 0);
-		sprintf(buffer, "RFQ %04lu  RPM %+04ld", pot_controls_a[RESPIRATORY_FREQUENCY_CONTROL].value, (int32_t) motor_encoder.rpm);
+		sprintf(buffer, "I:E %04u  STS %04u", pot_controls_a[I_E_RATIO_CONTROL].value, (enable_routine | calibration_btn));
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 3, 0);
-		sprintf(buffer, "PRS %04lu  TIM %04lu", pot_controls_a[PRESSURE_VALUE_CONTROL].value, HAL_GetTick()/1000);
+		sprintf(buffer, "PRS %04u  SIL %04u", pot_controls_a[PRESSURE_VALUE_CONTROL].value, silence_alarms);
 		LCDSendString(&lcd_display, buffer);
 
-		/*
-		LCDSetCursorPos(&lcd_display, 0, 0);
-		sprintf(buffer, "VOL %04lu ", pot_controls_a[TIDAL_VOLUME_CONTROL].value);
-		LCDSendString(&lcd_display, buffer);
-
-		LCDSetCursorPos(&lcd_display, 1, 0);
-		sprintf(buffer, "I:E %04lu  ", pot_controls_a[I_E_RATIO_CONTROL].value);
-		LCDSendString(&lcd_display, buffer);
-
-		LCDSetCursorPos(&lcd_display, 2, 0);
-		sprintf(buffer, "RFQ %04lu  ", pot_controls_a[RESPIRATORY_FREQUENCY_CONTROL].value);
-		LCDSendString(&lcd_display, buffer);
-
-		LCDSetCursorPos(&lcd_display, 3, 0);
-		sprintf(buffer, "PRS %04lu  ", pot_controls_a[PRESSURE_VALUE_CONTROL].value);
-		LCDSendString(&lcd_display, buffer);
-		*/
 		osDelayUntil(&PreviousWakeTime, LCD_DISPLAY_UPDATE_TIMESTEP_MS);
 	}
   /* USER CODE END startDisplayUpdate */
@@ -717,32 +736,6 @@ void startEncoderRPM(void const * argument)
   /* USER CODE END startEncoderRPM */
 }
 
-/* USER CODE BEGIN Header_startPotUpdate */
-/**
-* @brief Function implementing the potUpdate thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_startPotUpdate */
-void startPotUpdate(void const * argument)
-{
-  /* USER CODE BEGIN startPotUpdate */
-	uint32_t PreviousWakeTime = osKernelSysTick();
-	uint16_t adc_values[TOTAL_CONTROLS_COUNT] = {0,0,0,0};
-
-	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_values, TOTAL_CONTROLS_COUNT);
-	PotControlsValueUpdate(pot_controls_a, adc_values);
-
-	/* Infinite loop */
-	for(;;)
-	{
-		HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_values, TOTAL_CONTROLS_COUNT);
-		PotControlsValueUpdate(pot_controls_a, adc_values);
-		osDelayUntil(&PreviousWakeTime, 100);
-	}
-  /* USER CODE END startPotUpdate */
-}
-
 /* USER CODE BEGIN Header_startInitTask */
 /**
 * @brief Function implementing the initTask thread.
@@ -753,8 +746,65 @@ void startPotUpdate(void const * argument)
 void startInitTask(void const * argument)
 {
   /* USER CODE BEGIN startInitTask */
+	enable_routine = 0;
+	silence_alarms = 0;
+	main_routine_update_time_ms = 10;
+	i_e_ratio = 1;
+
 	osThreadTerminate(initTaskHandle);
   /* USER CODE END startInitTask */
+}
+
+/* USER CODE BEGIN Header_startAlarmsTask */
+/**
+* @brief Function implementing the alarmsTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_startAlarmsTask */
+void startAlarmsTask(void const * argument)
+{
+  /* USER CODE BEGIN startAlarmsTask */
+	uint32_t PreviousWakeTime = osKernelSysTick();
+	alarm_flag = 1;
+  /* Infinite loop */
+	for(;;)
+	{
+		if (silence_alarms == 1)
+		{
+			alarm_flag = 0;
+			osDelayUntil(&PreviousWakeTime, ALARM_SILENCE_TIMEOUT_MS);
+			alarm_flag = 1;
+			silence_alarms = 0;
+		}
+		osDelayUntil(&PreviousWakeTime, ALARM_UPDATE_TIMESTEP_MS);
+	}
+  /* USER CODE END startAlarmsTask */
+}
+
+/* USER CODE BEGIN Header_startUpdatePots */
+/**
+* @brief Function implementing the updatePots thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_startUpdatePots */
+void startUpdatePots(void const * argument)
+{
+  /* USER CODE BEGIN startUpdatePots */
+	//uint32_t PreviousWakeTime = osKernelSysTick();
+  /* Infinite loop */
+  for(;;)
+  {
+	  uint16_t adc_values[TOTAL_CONTROLS_COUNT] = {0,0,0,0};
+	  HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_values, TOTAL_CONTROLS_COUNT);
+	  PotControlsValueUpdate(pot_controls_a, adc_values);
+
+	  main_routine_update_time_ms = (uint16_t) ((((float) pot_controls_a[RESPIRATORY_FREQUENCY_CONTROL].value / (float) 4095) * (float) 1000) + 10);
+	  //osDelayUntil(&PreviousWakeTime, 100);
+	  osThreadSuspend(updatePotsHandle);
+  }
+  /* USER CODE END startUpdatePots */
 }
 
  /**

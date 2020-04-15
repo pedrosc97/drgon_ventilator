@@ -32,7 +32,7 @@ typedef struct Potentiometer_S
 	uint16_t		value;
 } Potentiometer_S;
 
-void PotControlsInit(Potentiometer_S *pot_array_);
-void PotControlsValueUpdate(Potentiometer_S *pot_array_, uint16_t *adc_values_);
+void PotControlsInit(volatile Potentiometer_S *pot_array_);
+void PotControlsValueUpdate(volatile Potentiometer_S *pot_array_, uint16_t *adc_values_);
 
 #endif /* INC_POTENTIOMETER_API_H_ */

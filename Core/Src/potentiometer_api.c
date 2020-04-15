@@ -8,7 +8,7 @@
 #include "stm32f1xx_hal.h"
 #include "potentiometer_api.h"
 
-void PotControlsInit(Potentiometer_S *pot_array_)
+void PotControlsInit(volatile Potentiometer_S *pot_array_)
 {
 	pot_array_[TIDAL_VOLUME_CONTROL].rank 				= PIN_A0;
 	pot_array_[I_E_RATIO_CONTROL].rank 					= PIN_A1;
@@ -16,7 +16,7 @@ void PotControlsInit(Potentiometer_S *pot_array_)
 	pot_array_[PRESSURE_VALUE_CONTROL].rank 			= PIN_A3;
 }
 
-void PotControlsValueUpdate(Potentiometer_S *pot_array_, uint16_t *adc_values_)
+void PotControlsValueUpdate(volatile Potentiometer_S *pot_array_, uint16_t *adc_values_)
 {
 	pot_array_[TIDAL_VOLUME_CONTROL].value 				= adc_values_[pot_array_[TIDAL_VOLUME_CONTROL].rank];
 	pot_array_[I_E_RATIO_CONTROL].value 				= adc_values_[pot_array_[I_E_RATIO_CONTROL].rank];
