@@ -17,7 +17,7 @@
 
 typedef enum
 {
-	HD_MODEL = 160,
+	HD_MODEL = 600,
 	SD_MODEL = 80,
 } EncoderModel_E;
 
