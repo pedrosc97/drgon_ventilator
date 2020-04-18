@@ -81,14 +81,9 @@ LCDDisplay_S 		lcd_display;
 Encoder_S			motor_encoder;
 
 volatile Potentiometer_S		pot_controls_a[TOTAL_CONTROLS_COUNT];
-volatile uint8_t	enable_routine;
-volatile uint16_t	main_routine_update_time_ms;
-volatile uint8_t	i_e_ratio;
-volatile uint8_t	silence_alarms;
 
 /* Debugging Variables */
-uint8_t alarm_flag;
-volatile uint8_t calibration_btn = 0;
+
 
 /* USER CODE END PV */
 
