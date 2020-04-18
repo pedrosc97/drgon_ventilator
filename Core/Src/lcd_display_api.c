@@ -77,7 +77,7 @@ void LCDInit(LCDDisplay_S *lcd_disp_, I2C_HandleTypeDef *i2c_handler_)
 	HAL_Delay(1);
 	LCDSendCmd(lcd_disp_, 0x0C); //Display on/off control --> D = 1, C and B = 0. (Cursor and blink, last two bits)
 	HAL_Delay(100);
-	LCDClear(&lcd_disp_);
+	LCDClear(lcd_disp_);
 }
 
 void LCDSendString(LCDDisplay_S *lcd_disp_, char *str)

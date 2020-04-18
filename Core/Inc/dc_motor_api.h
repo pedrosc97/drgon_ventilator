@@ -20,7 +20,7 @@ typedef struct DCMotor_S
 	uint8_t				direction_flag;
 } DCMotor_S;
 
-typedef enum
+typedef enum DCMotorDirection_E
 {
 	MOTOR_SPIN_CW,
 	MOTOR_SPIN_CCW,
