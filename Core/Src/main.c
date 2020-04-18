@@ -29,6 +29,7 @@
 #include "lcd_display_api.h"
 #include "encoder_api.h"
 #include "potentiometer_api.h"
+#include "buzzer_api.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -65,8 +66,11 @@ DMA_HandleTypeDef hdma_adc1;
 
 I2C_HandleTypeDef hi2c2;
 
+SPI_HandleTypeDef hspi1;
+
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim4;
 
 osThreadId mainRoutineHandle;
 osThreadId displayUpdateHandle;
@@ -74,11 +78,13 @@ osThreadId encoderRPMHandle;
 osThreadId initTaskHandle;
 osThreadId alarmsTaskHandle;
 osThreadId updatePotsHandle;
+osThreadId buzzerUpdateHandle;
 /* USER CODE BEGIN PV */
 
 DCMotor_S 			dc_motor;
 LCDDisplay_S 		lcd_display;
 Encoder_S			motor_encoder;
+Buzzer_S			buzzer;
 
 volatile Potentiometer_S		pot_controls_a[TOTAL_CONTROLS_COUNT];
 volatile uint8_t	enable_routine;
@@ -101,12 +107,15 @@ static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_ADC2_Init(void);
+static void MX_TIM4_Init(void);
+static void MX_SPI1_Init(void);
 void startMainRoutine(void const * argument);
 void startDisplayUpdate(void const * argument);
 void startEncoderRPM(void const * argument);
 void startInitTask(void const * argument);
 void startAlarmsTask(void const * argument);
 void startUpdatePots(void const * argument);
+void startBuzzerUpdate(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -189,12 +198,15 @@ int main(void)
   MX_TIM3_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
+  MX_TIM4_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
   DCMotorInit(&dc_motor, &htim1);
-  EncoderInit(&motor_encoder, SD_MODEL);
+  EncoderInit(&motor_encoder, HD_MODEL);
   LCDInit(&lcd_display, &hi2c2);
   PotControlsInit(pot_controls_a);
+  BuzzerInit(&buzzer);
 
   /* USER CODE END 2 */
 
@@ -220,7 +232,7 @@ int main(void)
   mainRoutineHandle = osThreadCreate(osThread(mainRoutine), NULL);
 
   /* definition and creation of displayUpdate */
-  osThreadDef(displayUpdate, startDisplayUpdate, osPriorityAboveNormal, 0, 128);
+  osThreadDef(displayUpdate, startDisplayUpdate, osPriorityNormal, 0, 128);
   displayUpdateHandle = osThreadCreate(osThread(displayUpdate), NULL);
 
   /* definition and creation of encoderRPM */
@@ -238,6 +250,10 @@ int main(void)
   /* definition and creation of updatePots */
   osThreadDef(updatePots, startUpdatePots, osPriorityRealtime, 0, 128);
   updatePotsHandle = osThreadCreate(osThread(updatePots), NULL);
+
+  /* definition and creation of buzzerUpdate */
+  osThreadDef(buzzerUpdate, startBuzzerUpdate, osPriorityAboveNormal, 0, 128);
+  buzzerUpdateHandle = osThreadCreate(osThread(buzzerUpdate), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -451,6 +467,44 @@ static void MX_I2C2_Init(void)
 }
 
 /**
+  * @brief SPI1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI1_Init(void)
+{
+
+  /* USER CODE BEGIN SPI1_Init 0 */
+
+  /* USER CODE END SPI1_Init 0 */
+
+  /* USER CODE BEGIN SPI1_Init 1 */
+
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_HARD_INPUT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI1_Init 2 */
+
+  /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
   * @brief TIM1 Initialization Function
   * @param None
   * @retval None
@@ -536,18 +590,18 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 0;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 80-1;
+  htim3.Init.Period = 2400-1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
-  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC1Polarity = TIM_ICPOLARITY_FALLING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 15;
-  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC1Filter = 2;
+  sConfig.IC2Polarity = TIM_ICPOLARITY_FALLING;
   sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC2Filter = 15;
+  sConfig.IC2Filter = 2;
   if (HAL_TIM_Encoder_Init(&htim3, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -561,6 +615,55 @@ static void MX_TIM3_Init(void)
   /* USER CODE BEGIN TIM3_Init 2 */
   HAL_TIM_Encoder_Start_IT(&htim3, htim3.Channel);
   /* USER CODE END TIM3_Init 2 */
+
+}
+
+/**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_Encoder_InitTypeDef sConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 0;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 0;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
+  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC1Filter = 0;
+  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC2Filter = 0;
+  if (HAL_TIM_Encoder_Init(&htim4, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
 
 }
 
@@ -590,15 +693,33 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, ModeLEDOut_Pin|PowerOnLEDOut_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, PrsSnsrCSADCOut_Pin|PrsSnsrCSEEOut_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, MotorCW_Pin|MotorCCW_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, BuzzerOut_Pin|MotorCW_Pin|MotorCCW_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, ModeLEDOut_Pin|PowerOnLEDOut_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : PrsSnsrCSADCOut_Pin PrsSnsrCSEEOut_Pin */
+  GPIO_InitStruct.Pin = PrsSnsrCSADCOut_Pin|PrsSnsrCSEEOut_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : BuzzerOut_Pin MotorCW_Pin MotorCCW_Pin */
+  GPIO_InitStruct.Pin = BuzzerOut_Pin|MotorCW_Pin|MotorCCW_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : EditBtnIn_Pin CalibrationBtnIn_Pin AlarmSilenceBtnIn_Pin */
   GPIO_InitStruct.Pin = EditBtnIn_Pin|CalibrationBtnIn_Pin|AlarmSilenceBtnIn_Pin;
@@ -618,13 +739,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(StartStopBtnIn_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : MotorCW_Pin MotorCCW_Pin */
-  GPIO_InitStruct.Pin = MotorCW_Pin|MotorCCW_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
@@ -665,12 +779,14 @@ void startMainRoutine(void const * argument)
 				DCMotorRPMSet(&dc_motor);
 				dc_motor.direction_flag = MOTOR_SPIN_CW;
 			}
+			BuzzerUpdateParams(&buzzer, 500, 0.5, 2);
 		}
 		else
 		{
 			dc_motor.pwm_value = 0;
 			dc_motor.direction_flag = MOTOR_SPIN_STOP;
 			DCMotorRPMSet(&dc_motor);
+			BuzzerUpdateParams(&buzzer, 125, 0.5, 6);
 		}
 
 		osDelayUntil(&PreviousWakeTime, main_routine_update_time_ms);
@@ -694,20 +810,36 @@ void startDisplayUpdate(void const * argument)
   /* Infinite loop */
 	for(;;)
 	{
-		LCDSetCursorPos(&lcd_display, 0, 0);
+		LCDSetCursorPos(&lcd_display, 1, 0);
 		sprintf(buffer, "VOL %04u  PWM %04u", pot_controls_a[TIDAL_VOLUME_CONTROL].value, dc_motor.pwm_value);
 		LCDSendString(&lcd_display, buffer);
 
-		LCDSetCursorPos(&lcd_display, 1, 0);
-		sprintf(buffer, "RFQ %04u  RPM %+04ld", pot_controls_a[RESPIRATORY_FREQUENCY_CONTROL].value, (int32_t) motor_encoder.rpm);
+		float rpm_ = motor_encoder.rpm;
+		char *sign_;
+		if (rpm_ < 0)
+		{
+			sign_ = "-";
+			rpm_ = -rpm_;
+		}
+		else
+		{
+			sign_ = "+";
+		}
+
+		int32_t temp_rpm = rpm_;
+		float frac_ = rpm_ - temp_rpm;
+		int32_t temp_frac_rpm = (int32_t) (frac_ * 10000);
+
+		LCDSetCursorPos(&lcd_display, 3, 0);
+		sprintf(buffer, "RFQ %04u  RPM %s%ld.%04ld", pot_controls_a[RESPIRATORY_FREQUENCY_CONTROL].value, sign_, temp_rpm, temp_frac_rpm);
+		LCDSendString(&lcd_display, buffer);
+
+		LCDSetCursorPos(&lcd_display, 0, 0);
+		sprintf(buffer, "I:E %04u  STS %04u", pot_controls_a[I_E_RATIO_CONTROL].value, (enable_routine << 2 | calibration_btn << 1 | silence_alarms));
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 2, 0);
-		sprintf(buffer, "I:E %04u  STS %04u", pot_controls_a[I_E_RATIO_CONTROL].value, (enable_routine | calibration_btn));
-		LCDSendString(&lcd_display, buffer);
-
-		LCDSetCursorPos(&lcd_display, 3, 0);
-		sprintf(buffer, "PRS %04u  SIL %04u", pot_controls_a[PRESSURE_VALUE_CONTROL].value, silence_alarms);
+		sprintf(buffer, "PRS %04u  CNT %04lu", pot_controls_a[PRESSURE_VALUE_CONTROL].value, TIM3->CNT);
 		LCDSendString(&lcd_display, buffer);
 
 		osDelayUntil(&PreviousWakeTime, LCD_DISPLAY_UPDATE_TIMESTEP_MS);
@@ -746,11 +878,14 @@ void startEncoderRPM(void const * argument)
 void startInitTask(void const * argument)
 {
   /* USER CODE BEGIN startInitTask */
+	//uint32_t PreviousWakeTime = osKernelSysTick();
+
 	enable_routine = 0;
 	silence_alarms = 0;
 	main_routine_update_time_ms = 10;
 	i_e_ratio = 1;
 
+	osThreadResume(updatePotsHandle);
 	osThreadTerminate(initTaskHandle);
   /* USER CODE END startInitTask */
 }
@@ -805,6 +940,51 @@ void startUpdatePots(void const * argument)
 	  osThreadSuspend(updatePotsHandle);
   }
   /* USER CODE END startUpdatePots */
+}
+
+/* USER CODE BEGIN Header_startBuzzerUpdate */
+/**
+* @brief Function implementing the buzzerUpdate thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_startBuzzerUpdate */
+void startBuzzerUpdate(void const * argument)
+{
+  /* USER CODE BEGIN startBuzzerUpdate */
+	uint32_t PreviousWakeTime = osKernelSysTick();
+	uint32_t cycle_counter = 0;
+	uint16_t cycles = (uint16_t) (0.5 * (float)(buzzer.period) / buzzer.cycle_time);
+	uint16_t dead_time = (uint16_t) ( (float) buzzer.period * 0.5);
+
+  /* Infinite loop */
+	for(;;)
+	{
+		if (silence_alarms == 0 && calibration_btn == 1)
+		{
+				if (cycle_counter == (cycles - 1))
+				{
+					cycle_counter = 0;
+					osDelayUntil(&PreviousWakeTime, dead_time);
+				}
+
+				cycle_counter++;
+				uint8_t on_time = (uint8_t) (buzzer.cycle_time * buzzer.duty_cycle);
+				uint8_t off_time = (uint8_t) (1.0 - (buzzer.cycle_time * buzzer.duty_cycle));
+
+				HAL_GPIO_WritePin(GPIOB, BuzzerOut_Pin, GPIO_PIN_SET);
+				osDelayUntil(&PreviousWakeTime, on_time);
+
+				HAL_GPIO_WritePin(GPIOB, BuzzerOut_Pin, GPIO_PIN_RESET);
+				osDelayUntil(&PreviousWakeTime, off_time);
+		}
+		else
+		{
+			cycle_counter = 0;
+			osDelayUntil(&PreviousWakeTime, 10);
+		}
+	}
+  /* USER CODE END startBuzzerUpdate */
 }
 
  /**

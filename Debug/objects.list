@@ -1,3 +1,4 @@
+"Core/Src/buzzer_api.o"
 "Core/Src/dc_motor_api.o"
 "Core/Src/encoder_api.o"
 "Core/Src/freertos.o"
@@ -25,6 +26,7 @@
 "Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.o"
 "Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.o"
 "Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.o"
+"Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.o"
 "Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.o"
 "Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.o"
 "Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.o"
