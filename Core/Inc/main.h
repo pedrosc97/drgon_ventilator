@@ -60,6 +60,10 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define PrsSnsrCSADCOut_Pin GPIO_PIN_14
+#define PrsSnsrCSADCOut_GPIO_Port GPIOC
+#define PrsSnsrCSEEOut_Pin GPIO_PIN_15
+#define PrsSnsrCSEEOut_GPIO_Port GPIOC
 #define SYS_ExternOscIn_Pin GPIO_PIN_0
 #define SYS_ExternOscIn_GPIO_Port GPIOD
 #define SYS_ExternOscOut_Pin GPIO_PIN_1
@@ -74,16 +78,14 @@ void Error_Handler(void);
 #define PressureLvlPotIn_GPIO_Port GPIOA
 #define PressureSensorIn_Pin GPIO_PIN_4
 #define PressureSensorIn_GPIO_Port GPIOA
-#define Placeholder_Pin GPIO_PIN_5
-#define Placeholder_GPIO_Port GPIOA
+#define ADCPlaceholderIn_Pin GPIO_PIN_5
+#define ADCPlaceholderIn_GPIO_Port GPIOA
 #define MotorEncoderA_Pin GPIO_PIN_6
 #define MotorEncoderA_GPIO_Port GPIOA
 #define MotorEncoderB_Pin GPIO_PIN_7
 #define MotorEncoderB_GPIO_Port GPIOA
-#define PlaceholderB0_Pin GPIO_PIN_0
-#define PlaceholderB0_GPIO_Port GPIOB
-#define PlaceholderB1_Pin GPIO_PIN_1
-#define PlaceholderB1_GPIO_Port GPIOB
+#define BuzzerOut_Pin GPIO_PIN_0
+#define BuzzerOut_GPIO_Port GPIOB
 #define LCD_SCL_Pin GPIO_PIN_10
 #define LCD_SCL_GPIO_Port GPIOB
 #define LCD_SDA_Pin GPIO_PIN_11
@@ -110,9 +112,13 @@ void Error_Handler(void);
 #define SYS_DebugSWDIO_GPIO_Port GPIOA
 #define SYS_DebugSWCLK_Pin GPIO_PIN_14
 #define SYS_DebugSWCLK_GPIO_Port GPIOA
-#define MotorCW_Pin GPIO_PIN_4
+#define ArmEncoderA_Pin GPIO_PIN_6
+#define ArmEncoderA_GPIO_Port GPIOB
+#define ArmEncoderB_Pin GPIO_PIN_7
+#define ArmEncoderB_GPIO_Port GPIOB
+#define MotorCW_Pin GPIO_PIN_8
 #define MotorCW_GPIO_Port GPIOB
-#define MotorCCW_Pin GPIO_PIN_5
+#define MotorCCW_Pin GPIO_PIN_9
 #define MotorCCW_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
