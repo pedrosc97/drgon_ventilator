@@ -7,6 +7,7 @@
 
 #include "stm32f1xx_hal.h"
 #include "dc_motor_api.h"
+#include "main.h"
 
 void DCMotorInit(DCMotor_S *dc_motor_, TIM_HandleTypeDef *timer_handler_)
 {
@@ -31,18 +32,18 @@ void DCMotorRPMSet(DCMotor_S *dc_motor_)
 
     if (dc_motor_->direction_flag == MOTOR_SPIN_CW)
     {
-		HAL_GPIO_WritePin(GPIOB, DC_MOTOR_CW_PIN, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOB, DC_MOTOR_CCW_PIN, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOB, MotorCW_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOB, MotorCCW_Pin, GPIO_PIN_RESET);
     }
 	else if (dc_motor_->direction_flag == MOTOR_SPIN_CCW)
 	{
-			HAL_GPIO_WritePin(GPIOB, DC_MOTOR_CW_PIN, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(GPIOB, DC_MOTOR_CCW_PIN, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOB, MotorCW_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOB, MotorCCW_Pin, GPIO_PIN_SET);
     }
 	else
 	{
-			HAL_GPIO_WritePin(GPIOB, DC_MOTOR_CW_PIN, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(GPIOB, DC_MOTOR_CCW_PIN, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOB, MotorCW_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOB, MotorCCW_Pin, GPIO_PIN_RESET);
     }
 
     if (HAL_TIM_PWM_ConfigChannel(dc_motor_->motor_pwm_ctrl, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)

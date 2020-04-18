@@ -45,7 +45,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h \
  ../Core/Inc/dc_motor_api.h ../Core/Inc/lcd_display_api.h \
  ../Core/Inc/encoder_api.h ../Core/Inc/potentiometer_api.h \
- ../Core/Inc/buzzer_api.h
+ ../Core/Inc/buzzer_api.h ../Core/Inc/ventilator_api.h \
+ ../Core/Inc/potentiometer_api.h
 
 ../Core/Inc/main.h:
 
@@ -146,3 +147,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/potentiometer_api.h:
 
 ../Core/Inc/buzzer_api.h:
+
+../Core/Inc/ventilator_api.h:
+
+../Core/Inc/potentiometer_api.h:

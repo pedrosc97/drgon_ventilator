@@ -16,7 +16,8 @@ C_SRCS += \
 ../Core/Src/stm32f1xx_it.c \
 ../Core/Src/syscalls.c \
 ../Core/Src/sysmem.c \
-../Core/Src/system_stm32f1xx.c 
+../Core/Src/system_stm32f1xx.c \
+../Core/Src/ventilator_api.c 
 
 OBJS += \
 ./Core/Src/buzzer_api.o \
@@ -31,7 +32,8 @@ OBJS += \
 ./Core/Src/stm32f1xx_it.o \
 ./Core/Src/syscalls.o \
 ./Core/Src/sysmem.o \
-./Core/Src/system_stm32f1xx.o 
+./Core/Src/system_stm32f1xx.o \
+./Core/Src/ventilator_api.o 
 
 C_DEPS += \
 ./Core/Src/buzzer_api.d \
@@ -46,7 +48,8 @@ C_DEPS += \
 ./Core/Src/stm32f1xx_it.d \
 ./Core/Src/syscalls.d \
 ./Core/Src/sysmem.d \
-./Core/Src/system_stm32f1xx.d 
+./Core/Src/system_stm32f1xx.d \
+./Core/Src/ventilator_api.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
@@ -76,4 +79,6 @@ Core/Src/sysmem.o: ../Core/Src/sysmem.c
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m3 -std=gnu11 -g3 -DUSE_HAL_DRIVER -DSTM32F103xB -DDEBUG -c -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I../Drivers/CMSIS/Include -I../Core/Inc -I../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I../Drivers/STM32F1xx_HAL_Driver/Inc -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3 -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/sysmem.d" -MT"$@" --specs=nano.specs -mfloat-abi=soft -mthumb -o "$@"
 Core/Src/system_stm32f1xx.o: ../Core/Src/system_stm32f1xx.c
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m3 -std=gnu11 -g3 -DUSE_HAL_DRIVER -DSTM32F103xB -DDEBUG -c -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I../Drivers/CMSIS/Include -I../Core/Inc -I../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I../Drivers/STM32F1xx_HAL_Driver/Inc -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3 -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/system_stm32f1xx.d" -MT"$@" --specs=nano.specs -mfloat-abi=soft -mthumb -o "$@"
+Core/Src/ventilator_api.o: ../Core/Src/ventilator_api.c
+	arm-none-eabi-gcc "$<" -mcpu=cortex-m3 -std=gnu11 -g3 -DUSE_HAL_DRIVER -DSTM32F103xB -DDEBUG -c -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I../Drivers/CMSIS/Include -I../Core/Inc -I../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I../Drivers/STM32F1xx_HAL_Driver/Inc -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3 -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/ventilator_api.d" -MT"$@" --specs=nano.specs -mfloat-abi=soft -mthumb -o "$@"
 

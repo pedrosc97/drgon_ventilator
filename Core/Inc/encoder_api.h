@@ -15,7 +15,7 @@
 
 #include "stm32f1xx_hal.h"
 
-typedef enum
+typedef enum EncoderModel_E
 {
 	HD_MODEL = 600,
 	SD_MODEL = 80,

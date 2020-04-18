@@ -1,4 +1,4 @@
-Core/Src/dc_motor_api.o: ../Core/Src/dc_motor_api.c \
+Core/Src/ventilator_api.o: ../Core/Src/ventilator_api.c \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h \
  ../Core/Inc/stm32f1xx_hal_conf.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h \
@@ -26,7 +26,7 @@ Core/Src/dc_motor_api.o: ../Core/Src/dc_motor_api.c \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h \
- ../Core/Inc/dc_motor_api.h ../Core/Inc/main.h
+ ../Core/Inc/ventilator_api.h ../Core/Inc/potentiometer_api.h
 
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h:
 
@@ -82,6 +82,6 @@ Core/Src/dc_motor_api.o: ../Core/Src/dc_motor_api.c \
 
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h:
 
-../Core/Inc/dc_motor_api.h:
+../Core/Inc/ventilator_api.h:
 
-../Core/Inc/main.h:
+../Core/Inc/potentiometer_api.h:

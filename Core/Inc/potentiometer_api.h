@@ -8,7 +8,7 @@
 #ifndef INC_POTENTIOMETER_API_H_
 #define INC_POTENTIOMETER_API_H_
 
-typedef enum
+typedef enum PotControls_E
 {
 	TIDAL_VOLUME_CONTROL, 			// PA0
 	I_E_RATIO_CONTROL, 				// PA1
@@ -18,7 +18,7 @@ typedef enum
 	TOTAL_CONTROLS_COUNT, 			// Always leave this at the bottom
 } PotControls_E;
 
-typedef enum
+typedef enum ADCRank_E
 {
 	PIN_A2,
 	PIN_A3,
@@ -26,13 +26,13 @@ typedef enum
 	PIN_A1,
 } ADCRank_E;
 
-typedef struct Potentiometer_S
+typedef volatile struct Potentiometer_S
 {
 	ADCRank_E		rank;
 	uint16_t		value;
 } Potentiometer_S;
 
-void PotControlsInit(volatile Potentiometer_S *pot_array_);
-void PotControlsValueUpdate(volatile Potentiometer_S *pot_array_, uint16_t *adc_values_);
+void PotControlsInit(Potentiometer_S *pot_array_);
+void PotControlsValueUpdate(Potentiometer_S *pot_array_, uint16_t *adc_values_);
 
 #endif /* INC_POTENTIOMETER_API_H_ */
