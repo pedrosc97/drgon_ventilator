@@ -101,10 +101,6 @@ void Error_Handler(void);
 #define AlarmSilenceBtnIn_EXTI_IRQn EXTI15_10_IRQn
 #define MotorPWMOut_Pin GPIO_PIN_8
 #define MotorPWMOut_GPIO_Port GPIOA
-#define ModeLEDOut_Pin GPIO_PIN_9
-#define ModeLEDOut_GPIO_Port GPIOA
-#define PowerOnLEDOut_Pin GPIO_PIN_10
-#define PowerOnLEDOut_GPIO_Port GPIOA
 #define StartStopBtnIn_Pin GPIO_PIN_11
 #define StartStopBtnIn_GPIO_Port GPIOA
 #define StartStopBtnIn_EXTI_IRQn EXTI15_10_IRQn
