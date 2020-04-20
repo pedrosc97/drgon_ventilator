@@ -1,3 +1,4 @@
+"Core/Src/arm_api.o"
 "Core/Src/buzzer_api.o"
 "Core/Src/dc_motor_api.o"
 "Core/Src/encoder_api.o"

@@ -31,6 +31,7 @@
 #include "potentiometer_api.h"
 #include "buzzer_api.h"
 #include "ventilator_api.h"
+#include "arm_api.h"
 
 /* USER CODE END Includes */
 
@@ -90,6 +91,7 @@ Encoder_S			motor_encoder;
 Buzzer_S			buzzer;
 Potentiometer_S		pot_controls_a[TOTAL_CONTROLS_COUNT];
 Ventilator_S		ventilator;
+Arm_S				arm;
 
 uint32_t			prev_systick = 0;
 
@@ -610,7 +612,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 0;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 1600-1;
+  htim3.Init.Period = 3200-1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
@@ -811,6 +813,7 @@ void startMainRoutine(void const * argument)
 		if (((ventilator.status_flags & ENABLE_ROUTINE) == ENABLE_ROUTINE) && !((ventilator.status_flags & START_CALIBRATION) == START_CALIBRATION))
 		{
 
+			/*
 			dc_motor.pwm_value = 2400;
 
 			if ((ventilator.status_flags & SILENCE_ALARMS) == SILENCE_ALARMS)
@@ -824,7 +827,7 @@ void startMainRoutine(void const * argument)
 
 			DCMotorRPMSet(&dc_motor);
 			osDelayUntil(&PreviousWakeTime, 10);
-
+			*/
 			/* TODO: Transfer function TIDAL_VOL, FREQ ----> PWM */
 
 			/*
@@ -846,6 +849,9 @@ void startMainRoutine(void const * argument)
 			DCMotorRPMSet(&dc_motor);
 			osDelayUntil(&PreviousWakeTime, 500);
 			*/
+
+
+
 
 		}
 		else if ((ventilator.status_flags & START_CALIBRATION) == START_CALIBRATION)
@@ -885,32 +891,16 @@ void startDisplayUpdate(void const * argument)
 		sprintf(buffer, "VOL %03u  MOT %04lu", ventilator.tidal_volume, TIM3->CNT);
 		LCDSendString(&lcd_display, buffer);
 
-		float rpm_ = motor_encoder.rpm;
-		char *sign_;
-		if (rpm_ < 0)
-		{
-			sign_ = "-";
-			rpm_ = -rpm_;
-		}
-		else
-		{
-			sign_ = "+";
-		}
-
-		int32_t temp_rpm = rpm_;
-		float frac_ = rpm_ - temp_rpm;
-		int32_t temp_frac_rpm = (int32_t) (frac_ * 10000);
-
 		LCDSetCursorPos(&lcd_display, 3, 0);
-		sprintf(buffer, "RFQ %03u  RPM %s%ld.%04ld", ventilator.respiration_frequency, sign_, temp_rpm, temp_frac_rpm);
+		sprintf(buffer, "RFQ %03u  ANGL", ventilator.respiration_frequency);
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 0, 0);
-		sprintf(buffer, "I:E %03u  STS %04u", ventilator.i_e_ratio, ventilator.status_flags);
+		sprintf(buffer, "I:E %03u  T %06lu", ventilator.i_e_ratio, HAL_GetTick());
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 2, 0);
-		sprintf(buffer, "PRS %03u  CNT %04lu", ventilator.pressure_level_alarm_value, TIM4->CNT);
+		sprintf(buffer, "PRS %03u  ARM %04lu", ventilator.pressure_level_alarm_value, TIM4->CNT);
 		LCDSendString(&lcd_display, buffer);
 
 		osDelayUntil(&PreviousWakeTime, LCD_DISPLAY_UPDATE_TIMESTEP_MS);
@@ -1096,6 +1086,8 @@ void startCalibRoutine(void const * argument)
 				dc_motor.direction_flag = MOTOR_SPIN_STOP;
 				DCMotorRPMSet(&dc_motor);
 				process_flag = 0;
+				TIM3->CNT = 0;
+				TIM4->CNT = 0;
 				ToggleCalibrationParam(&ventilator);
 				osThreadResume(mainRoutineHandle);
 				osThreadSuspend(calibRoutineHandle);
