@@ -41,12 +41,14 @@ typedef struct Ventilator_S
 {
 	uint8_t		i_e_ratio; 						// 1 to 4
 	uint8_t		respiration_frequency; 			// 8 to 40 Hz
-	uint16_t	tidal_volume; 					// 0 to 800 ml in one increment
 	uint8_t		pressure_level_alarm_value; 	// 0 to 80 in 5 increments
-
+	uint16_t	tidal_volume; 					// 0 to 800 ml in one increment
 	uint16_t	respiration_period_ms;
 	uint16_t	inspiration_period_ms;
 	uint16_t	exhalation_period_ms;
+	uint16_t	end_angle_pulse;
+	uint16_t	motor_pwm_value_in;
+	uint16_t	motor_pwm_value_out;
 
 	volatile uint8_t	status_flags;	// 0000 [calbration_btn_1][calibration_btn_0][silence_alarms][enable_routine]
 	volatile uint8_t	alarm_flags;	// 0000 0000

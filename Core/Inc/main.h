@@ -60,10 +60,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define PrsSnsrCSADCOut_Pin GPIO_PIN_14
-#define PrsSnsrCSADCOut_GPIO_Port GPIOC
-#define PrsSnsrCSEEOut_Pin GPIO_PIN_15
-#define PrsSnsrCSEEOut_GPIO_Port GPIOC
 #define SYS_ExternOscIn_Pin GPIO_PIN_0
 #define SYS_ExternOscIn_GPIO_Port GPIOD
 #define SYS_ExternOscOut_Pin GPIO_PIN_1
@@ -76,16 +72,10 @@ void Error_Handler(void);
 #define FrequencyPotIn_GPIO_Port GPIOA
 #define PressureLvlPotIn_Pin GPIO_PIN_3
 #define PressureLvlPotIn_GPIO_Port GPIOA
-#define PressureSensorIn_Pin GPIO_PIN_4
-#define PressureSensorIn_GPIO_Port GPIOA
-#define ADCPlaceholderIn_Pin GPIO_PIN_5
-#define ADCPlaceholderIn_GPIO_Port GPIOA
 #define MotorEncoderA_Pin GPIO_PIN_6
 #define MotorEncoderA_GPIO_Port GPIOA
 #define MotorEncoderB_Pin GPIO_PIN_7
 #define MotorEncoderB_GPIO_Port GPIOA
-#define BuzzerOut_Pin GPIO_PIN_0
-#define BuzzerOut_GPIO_Port GPIOB
 #define LCD_SCL_Pin GPIO_PIN_10
 #define LCD_SCL_GPIO_Port GPIOB
 #define LCD_SDA_Pin GPIO_PIN_11

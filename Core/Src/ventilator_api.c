@@ -40,6 +40,14 @@ void UpdateVentilatorParams(Ventilator_S *ventilator_, Potentiometer_S *potentio
 	ventilator_->respiration_period_ms		= (int) ((60000.0f / (float) ventilator_->respiration_frequency));
 	ventilator_->inspiration_period_ms		= (int) ((1.0 / ((float) ventilator_->i_e_ratio + 1.0)) * ventilator_->respiration_period_ms);
 	ventilator_->exhalation_period_ms		= (int) ((float) ventilator_->i_e_ratio * ventilator_->inspiration_period_ms);
+	ventilator_->end_angle_pulse 			= (int) (((float) ventilator_->tidal_volume) / 800.0f * 144.0f);
+
+	float end_angle			= (((float) ventilator_->tidal_volume) / 800.0f * 21.6f);
+	float rpm_arm_in 		= ((float) end_angle) / ( ((float) ventilator_->inspiration_period_ms) / 1000.0f) * (30.0f / 3.14159f);
+	float rpm_arm_out 		= ((float) end_angle) / ( ((float) ventilator_->exhalation_period_ms) / 1000.0f) * (30.0f / 3.14159f);
+
+	ventilator_->motor_pwm_value_in			=  (int) ((25.0f * rpm_arm_in / 113.0f * 4200) + 600);
+	ventilator_->motor_pwm_value_out		=  (int) ((25.0f * rpm_arm_out / 113.0f * 4200) + 600);
 }
 
 void ToggleRoutineEnaParam(Ventilator_S *ventilator_)
