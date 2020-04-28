@@ -1,3 +1,4 @@
+"Core/Src/arm_api.o"
 "Core/Src/buzzer_api.o"
 "Core/Src/dc_motor_api.o"
 "Core/Src/encoder_api.o"
@@ -30,6 +31,7 @@
 "Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.o"
 "Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.o"
 "Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.o"
+"Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.o"
 "Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.o"
 "Middlewares/Third_Party/FreeRTOS/Source/croutine.o"
 "Middlewares/Third_Party/FreeRTOS/Source/event_groups.o"

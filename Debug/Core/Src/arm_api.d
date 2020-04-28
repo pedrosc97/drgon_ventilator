@@ -1,5 +1,4 @@
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.o: \
- ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c \
+Core/Src/arm_api.o: ../Core/Src/arm_api.c \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h \
  ../Core/Inc/stm32f1xx_hal_conf.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h \
@@ -27,7 +26,8 @@ Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.o: \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h \
- ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
+ ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h \
+ ../Core/Inc/arm_api.h ../Core/Inc/dc_motor_api.h
 
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h:
 
@@ -84,3 +84,7 @@ Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.o: \
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h:
 
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h:
+
+../Core/Inc/arm_api.h:
+
+../Core/Inc/dc_motor_api.h:

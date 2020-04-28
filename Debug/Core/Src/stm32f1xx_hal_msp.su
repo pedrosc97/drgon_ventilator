@@ -10,3 +10,5 @@ stm32f1xx_hal_msp.c:386:6:HAL_TIM_Encoder_MspInit	48	static
 stm32f1xx_hal_msp.c:436:6:HAL_TIM_MspPostInit	40	static
 stm32f1xx_hal_msp.c:466:6:HAL_TIM_PWM_MspDeInit	16	static
 stm32f1xx_hal_msp.c:488:6:HAL_TIM_Encoder_MspDeInit	16	static
+stm32f1xx_hal_msp.c:535:6:HAL_UART_MspInit	40	static
+stm32f1xx_hal_msp.c:574:6:HAL_UART_MspDeInit	16	static
