@@ -87,7 +87,7 @@ Potentiometer_S		pot_controls_a[TOTAL_CONTROLS_COUNT];
 Ventilator_S		ventilator;
 
 uint32_t			prev_systick = 0;
-
+volatile uint8_t 	unwind_flag = 0;
 /* Debugging Variables */
 
 
@@ -144,7 +144,19 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		uint32_t	WakeTime = osKernelSysTick();
 		if ((WakeTime - prev_systick) > 500)
 		{
-			ToggleSilenceAlarmParam(&ventilator);
+			//ToggleSilenceAlarmParam(&ventilator);
+			if (unwind_flag == 0)
+			{
+				unwind_flag = 1;
+			}
+			else if (unwind_flag == 1)
+			{
+				unwind_flag = 2;
+			}
+			else
+			{
+				unwind_flag = 0;
+			}
 			prev_systick = WakeTime;
 		}
 	}
@@ -621,13 +633,13 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : EditBtnIn_Pin CalibrationBtnIn_Pin AlarmSilenceBtnIn_Pin */
   GPIO_InitStruct.Pin = EditBtnIn_Pin|CalibrationBtnIn_Pin|AlarmSilenceBtnIn_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : StartStopBtnIn_Pin */
   GPIO_InitStruct.Pin = StartStopBtnIn_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(StartStopBtnIn_GPIO_Port, &GPIO_InitStruct);
 
@@ -637,11 +649,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
-
 }
 
 /* USER CODE BEGIN 4 */
@@ -670,7 +677,7 @@ void startMainRoutine(void const * argument)
 			DCMotorRPMSet(&dc_motor);
 
 			//osDelayUntil(&PreviousWakeTime, ventilator.inspiration_period_ms);
-			if (TIM4->CNT < (ventilator.end_angle_pulse - 3))
+			if (TIM3->CNT < (ventilator.end_angle_pulse - 3))
 			{
 				osDelayUntil(&PreviousWakeTime, 10);
 			}
@@ -685,7 +692,7 @@ void startMainRoutine(void const * argument)
 			DCMotorRPMSet(&dc_motor);
 			osDelayUntil(&PreviousWakeTime, ventilator.exhalation_period_ms);
 
-			if (TIM4->CNT > (10))
+			if (TIM3->CNT > (10))
 			{
 				osDelayUntil(&PreviousWakeTime, 10);
 			}
@@ -733,11 +740,11 @@ void startDisplayUpdate(void const * argument)
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 1, 0);
-		sprintf(buffer, "VOL %03u  PMOT %04lu", ventilator.tidal_volume, TIM3->CNT);
+		sprintf(buffer, "VOL %03u  PMOT %04lu", ventilator.tidal_volume, TIM4->CNT);
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 2, 0);
-		sprintf(buffer, "PRS %03u  PARM %04lu", ventilator.pressure_level_alarm_value, TIM4->CNT);
+		sprintf(buffer, "PRS %03u  PARM %04lu", ventilator.pressure_level_alarm_value, TIM3->CNT);
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 3, 0);
@@ -782,6 +789,9 @@ void startInitTask(void const * argument)
 {
   /* USER CODE BEGIN startInitTask */
 	VentilatorInit(&ventilator);
+	/* EXTI interrupt init*/
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 	osThreadResume(updatePotsHandle);
 	osThreadTerminate(initTaskHandle);
   /* USER CODE END startInitTask */
@@ -803,14 +813,28 @@ void startAlarmsTask(void const * argument)
   /* Infinite loop */
 	for(;;)
 	{
-		if ((ventilator.status_flags & SILENCE_ALARMS) == SILENCE_ALARMS)
+		if (((ventilator.status_flags & ENABLE_ROUTINE) == ENABLE_ROUTINE) && !((ventilator.status_flags & START_CALIBRATION) == START_CALIBRATION))
 		{
-			ventilator.alarm_flags = 0x00;
-			osDelayUntil(&PreviousWakeTime, ALARM_SILENCE_TIMEOUT_MS);
-			ventilator.alarm_flags = 0x01;
-			ToggleSilenceAlarmParam(&ventilator);
+			if (unwind_flag == 0)
+			{
+				dc_motor.pwm_value = 0;
+				dc_motor.direction_flag = MOTOR_SPIN_STOP;
+				DCMotorRPMSet(&dc_motor);
+			}
+			else if (unwind_flag == 1)
+			{
+				dc_motor.pwm_value = 750;
+				dc_motor.direction_flag = MOTOR_SPIN_CW;
+				DCMotorRPMSet(&dc_motor);
+			}
+			else
+			{
+				dc_motor.pwm_value = 750;
+				dc_motor.direction_flag = MOTOR_SPIN_CCW;
+				DCMotorRPMSet(&dc_motor);
+			}
 		}
-		osDelayUntil(&PreviousWakeTime, ALARM_UPDATE_TIMESTEP_MS);
+		osDelayUntil(&PreviousWakeTime, 10);
 	}
   /* USER CODE END startAlarmsTask */
 }
@@ -860,7 +884,7 @@ void startCalibRoutine(void const * argument)
 			{
 				osThreadSuspend(mainRoutineHandle);
 				PreviousWakeTime = osKernelSysTick();
-				dc_motor.pwm_value = 600;
+				dc_motor.pwm_value = 1000;
 				dc_motor.direction_flag = MOTOR_SPIN_CW;
 				DCMotorRPMSet(&dc_motor);
 				osDelayUntil(&PreviousWakeTime, 3000);
@@ -870,7 +894,7 @@ void startCalibRoutine(void const * argument)
 				osThreadSuspend(calibRoutineHandle);
 
 				init_count = TIM4->CNT;
-				dc_motor.pwm_value = 600;
+				dc_motor.pwm_value = 1000;
 				dc_motor.direction_flag = MOTOR_SPIN_CCW;
 				DCMotorRPMSet(&dc_motor);
 				process_flag = 1;
