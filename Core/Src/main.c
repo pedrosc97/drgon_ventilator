@@ -668,7 +668,12 @@ void startMainRoutine(void const * argument)
 			dc_motor.pwm_value = ventilator.motor_pwm_value_in;
 			dc_motor.direction_flag = MOTOR_SPIN_CCW;
 			DCMotorRPMSet(&dc_motor);
-			osDelayUntil(&PreviousWakeTime, ventilator.inspiration_period_ms);
+
+			//osDelayUntil(&PreviousWakeTime, ventilator.inspiration_period_ms);
+			if (TIM4->CNT < (ventilator.end_angle_pulse - 3))
+			{
+				osDelayUntil(&PreviousWakeTime, 10);
+			}
 
 			dc_motor.pwm_value = 0;
 			dc_motor.direction_flag = MOTOR_SPIN_STOP;
@@ -679,6 +684,16 @@ void startMainRoutine(void const * argument)
 			dc_motor.direction_flag = MOTOR_SPIN_CW;
 			DCMotorRPMSet(&dc_motor);
 			osDelayUntil(&PreviousWakeTime, ventilator.exhalation_period_ms);
+
+			if (TIM4->CNT > (10))
+			{
+				osDelayUntil(&PreviousWakeTime, 10);
+			}
+
+			dc_motor.pwm_value = 0;
+			dc_motor.direction_flag = MOTOR_SPIN_STOP;
+			DCMotorRPMSet(&dc_motor);
+			osDelayUntil(&PreviousWakeTime, 100);
 		}
 		else if ((ventilator.status_flags & START_CALIBRATION) == START_CALIBRATION)
 		{
