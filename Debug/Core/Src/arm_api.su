@@ -1,0 +1,4 @@
+arm_api.c:11:6:ArmInit	16	static
+arm_api.c:22:6:ArmSetRPM	16	static
+arm_api.c:41:6:ArmSetAngSpeed	24	static
+arm_api.c:47:6:ArmMoveDeltaAngle	32	static

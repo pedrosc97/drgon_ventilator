@@ -29,9 +29,10 @@ typedef enum VentilatorStsCfg_E
 	ENABLE_ROUTINE = 0x01,
 	SILENCE_ALARMS = 0x02,
 	START_CALIBRATION = 0x04,
+	PLACE_AMBU_CALIBRATION = 0x08,
 	DISABLE_ROUTINE = 0xFE,
 	ENABLE_ALARMS = 0xFD,
-	STOP_CALIBRATION = 0xFB,
+	STOP_CALIBRATION = 0xF3,
 	ENABLE_ALL = 0x07,
 	DISABLE_ALL = 0x00,
 } VentilatorStsCfg_E;
@@ -47,7 +48,7 @@ typedef struct Ventilator_S
 	uint16_t	inspiration_period_ms;
 	uint16_t	exhalation_period_ms;
 
-	volatile uint8_t	status_flags;	// 0000 0[calibration_btn][silence_alarms][enable_routine]
+	volatile uint8_t	status_flags;	// 0000 [calbration_btn_1][calibration_btn_0][silence_alarms][enable_routine]
 	volatile uint8_t	alarm_flags;	// 0000 0000
 
 } Ventilator_S;

@@ -68,12 +68,18 @@ void ToggleSilenceAlarmParam(Ventilator_S *ventilator_)
 
 void ToggleCalibrationParam(Ventilator_S *ventilator_)
 {
-	if ((ventilator_->status_flags & START_CALIBRATION) == 0)
+	uint8_t state_ = ventilator_->status_flags & (0x0C);
+
+	if (state_ == 0x00)
 	{
-		ventilator_->status_flags = ventilator_->status_flags | START_CALIBRATION;
+		ventilator_->status_flags |= START_CALIBRATION;
+	}
+	else if (state_ == 0x04)
+	{
+		ventilator_->status_flags |= PLACE_AMBU_CALIBRATION;
 	}
 	else
 	{
-		ventilator_->status_flags = ventilator_->status_flags & STOP_CALIBRATION;
+		ventilator_->status_flags &= STOP_CALIBRATION;
 	}
 }
