@@ -60,18 +60,13 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
-ADC_HandleTypeDef hadc2;
 DMA_HandleTypeDef hdma_adc1;
 
 I2C_HandleTypeDef hi2c2;
 
-SPI_HandleTypeDef hspi1;
-
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
-
-UART_HandleTypeDef huart1;
 
 osThreadId mainRoutineHandle;
 osThreadId displayUpdateHandle;
@@ -79,7 +74,6 @@ osThreadId motorEncoderHandle;
 osThreadId initTaskHandle;
 osThreadId alarmsTaskHandle;
 osThreadId updatePotsHandle;
-osThreadId buzzerUpdateHandle;
 osThreadId calibRoutineHandle;
 osThreadId armEncoderHandle;
 osThreadId diagnosticsTaskHandle;
@@ -91,10 +85,9 @@ Encoder_S			motor_encoder;
 Buzzer_S			buzzer;
 Potentiometer_S		pot_controls_a[TOTAL_CONTROLS_COUNT];
 Ventilator_S		ventilator;
-Arm_S				arm;
 
 uint32_t			prev_systick = 0;
-
+volatile uint8_t 	unwind_flag = 0;
 /* Debugging Variables */
 
 
@@ -108,17 +101,13 @@ static void MX_I2C2_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_ADC1_Init(void);
-static void MX_ADC2_Init(void);
 static void MX_TIM4_Init(void);
-static void MX_SPI1_Init(void);
-static void MX_USART1_UART_Init(void);
 void startMainRoutine(void const * argument);
 void startDisplayUpdate(void const * argument);
 void startMotorEncoder(void const * argument);
 void startInitTask(void const * argument);
 void startAlarmsTask(void const * argument);
 void startUpdatePots(void const * argument);
-void startBuzzerUpdate(void const * argument);
 void startCalibRoutine(void const * argument);
 void startArmEncoder(void const * argument);
 void startDiagnostics(void const * argument);
@@ -155,7 +144,19 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		uint32_t	WakeTime = osKernelSysTick();
 		if ((WakeTime - prev_systick) > 500)
 		{
-			ToggleSilenceAlarmParam(&ventilator);
+			//ToggleSilenceAlarmParam(&ventilator);
+			if (unwind_flag == 0)
+			{
+				unwind_flag = 1;
+			}
+			else if (unwind_flag == 1)
+			{
+				unwind_flag = 2;
+			}
+			else
+			{
+				unwind_flag = 0;
+			}
 			prev_systick = WakeTime;
 		}
 	}
@@ -206,18 +207,13 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM3_Init();
   MX_ADC1_Init();
-  MX_ADC2_Init();
   MX_TIM4_Init();
-  MX_SPI1_Init();
-  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
   DCMotorInit(&dc_motor, &htim1);
   EncoderInit(&motor_encoder, HD_MODEL);
   LCDInit(&lcd_display, &hi2c2);
   PotControlsInit(pot_controls_a);
   BuzzerInit(&buzzer);
-
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -260,10 +256,6 @@ int main(void)
   /* definition and creation of updatePots */
   osThreadDef(updatePots, startUpdatePots, osPriorityRealtime, 0, 128);
   updatePotsHandle = osThreadCreate(osThread(updatePots), NULL);
-
-  /* definition and creation of buzzerUpdate */
-  osThreadDef(buzzerUpdate, startBuzzerUpdate, osPriorityAboveNormal, 0, 128);
-  buzzerUpdateHandle = osThreadCreate(osThread(buzzerUpdate), NULL);
 
   /* definition and creation of calibRoutine */
   osThreadDef(calibRoutine, startCalibRoutine, osPriorityRealtime, 0, 128);
@@ -410,51 +402,6 @@ static void MX_ADC1_Init(void)
 }
 
 /**
-  * @brief ADC2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_ADC2_Init(void)
-{
-
-  /* USER CODE BEGIN ADC2_Init 0 */
-
-  /* USER CODE END ADC2_Init 0 */
-
-  ADC_ChannelConfTypeDef sConfig = {0};
-
-  /* USER CODE BEGIN ADC2_Init 1 */
-
-  /* USER CODE END ADC2_Init 1 */
-  /** Common config 
-  */
-  hadc2.Instance = ADC2;
-  hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc2.Init.ContinuousConvMode = DISABLE;
-  hadc2.Init.DiscontinuousConvMode = DISABLE;
-  hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc2.Init.NbrOfConversion = 1;
-  if (HAL_ADC_Init(&hadc2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Configure Regular Channel 
-  */
-  sConfig.Channel = ADC_CHANNEL_4;
-  sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN ADC2_Init 2 */
-
-  /* USER CODE END ADC2_Init 2 */
-
-}
-
-/**
   * @brief I2C2 Initialization Function
   * @param None
   * @retval None
@@ -485,44 +432,6 @@ static void MX_I2C2_Init(void)
   /* USER CODE BEGIN I2C2_Init 2 */
 
   /* USER CODE END I2C2_Init 2 */
-
-}
-
-/**
-  * @brief SPI1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_SPI1_Init(void)
-{
-
-  /* USER CODE BEGIN SPI1_Init 0 */
-
-  /* USER CODE END SPI1_Init 0 */
-
-  /* USER CODE BEGIN SPI1_Init 1 */
-
-  /* USER CODE END SPI1_Init 1 */
-  /* SPI1 parameter configuration*/
-  hspi1.Instance = SPI1;
-  hspi1.Init.Mode = SPI_MODE_MASTER;
-  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_HARD_INPUT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
-  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi1.Init.CRCPolynomial = 10;
-  if (HAL_SPI_Init(&hspi1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN SPI1_Init 2 */
-
-  /* USER CODE END SPI1_Init 2 */
 
 }
 
@@ -689,39 +598,6 @@ static void MX_TIM4_Init(void)
 
 }
 
-/**
-  * @brief USART1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART1_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART1_Init 0 */
-
-  /* USER CODE END USART1_Init 0 */
-
-  /* USER CODE BEGIN USART1_Init 1 */
-
-  /* USER CODE END USART1_Init 1 */
-  huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
-  huart1.Init.WordLength = UART_WORDLENGTH_8B;
-  huart1.Init.StopBits = UART_STOPBITS_2;
-  huart1.Init.Parity = UART_PARITY_NONE;
-  huart1.Init.Mode = UART_MODE_TX_RX;
-  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART1_Init 2 */
-
-  /* USER CODE END USART1_Init 2 */
-
-}
-
 /** 
   * Enable DMA controller clock
   */
@@ -748,47 +624,31 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, PrsSnsrCSADCOut_Pin|PrsSnsrCSEEOut_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, BuzzerOut_Pin|MotorCW_Pin|MotorCCW_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pins : PrsSnsrCSADCOut_Pin PrsSnsrCSEEOut_Pin */
-  GPIO_InitStruct.Pin = PrsSnsrCSADCOut_Pin|PrsSnsrCSEEOut_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : BuzzerOut_Pin MotorCW_Pin MotorCCW_Pin */
-  GPIO_InitStruct.Pin = BuzzerOut_Pin|MotorCW_Pin|MotorCCW_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_WritePin(GPIOB, MotorCW_Pin|MotorCCW_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : EditBtnIn_Pin CalibrationBtnIn_Pin AlarmSilenceBtnIn_Pin */
   GPIO_InitStruct.Pin = EditBtnIn_Pin|CalibrationBtnIn_Pin|AlarmSilenceBtnIn_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : StartStopBtnIn_Pin */
   GPIO_InitStruct.Pin = StartStopBtnIn_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(StartStopBtnIn_GPIO_Port, &GPIO_InitStruct);
 
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
-
+  /*Configure GPIO pins : MotorCW_Pin MotorCCW_Pin */
+  GPIO_InitStruct.Pin = MotorCW_Pin|MotorCCW_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
 
 /* USER CODE BEGIN 4 */
@@ -812,47 +672,35 @@ void startMainRoutine(void const * argument)
 	{
 		if (((ventilator.status_flags & ENABLE_ROUTINE) == ENABLE_ROUTINE) && !((ventilator.status_flags & START_CALIBRATION) == START_CALIBRATION))
 		{
+			dc_motor.pwm_value = ventilator.motor_pwm_value_in;
+			dc_motor.direction_flag = MOTOR_SPIN_CCW;
+			DCMotorRPMSet(&dc_motor);
 
-			/*
-			dc_motor.pwm_value = 2400;
-
-			if ((ventilator.status_flags & SILENCE_ALARMS) == SILENCE_ALARMS)
+			//osDelayUntil(&PreviousWakeTime, ventilator.inspiration_period_ms);
+			if (TIM4->CNT < (ventilator.end_angle_pulse - 3))
 			{
-				dc_motor.direction_flag = MOTOR_SPIN_CW;
-			}
-			else
-			{
-				dc_motor.direction_flag = MOTOR_SPIN_CCW;
+				osDelayUntil(&PreviousWakeTime, 10);
 			}
 
-			DCMotorRPMSet(&dc_motor);
-			osDelayUntil(&PreviousWakeTime, 10);
-			*/
-			/* TODO: Transfer function TIDAL_VOL, FREQ ----> PWM */
-
-			/*
-			dc_motor.pwm_value = potentiometer_[TIDAL_VOLUME_CONTROL].value;
-
-			dc_motor.direction_flag = MOTOR_SPIN_CW;
-			DCMotorRPMSet(&dc_motor);
-			osDelayUntil(&PreviousWakeTime, ventilator.inspiration_period_ms);
-
+			dc_motor.pwm_value = 0;
 			dc_motor.direction_flag = MOTOR_SPIN_STOP;
 			DCMotorRPMSet(&dc_motor);
-			osDelayUntil(&PreviousWakeTime, 500);
+			osDelayUntil(&PreviousWakeTime, 100);
 
-			dc_motor.direction_flag = MOTOR_SPIN_CCW;
+			dc_motor.pwm_value = ventilator.motor_pwm_value_out;
+			dc_motor.direction_flag = MOTOR_SPIN_CW;
 			DCMotorRPMSet(&dc_motor);
 			osDelayUntil(&PreviousWakeTime, ventilator.exhalation_period_ms);
 
+			if (TIM4->CNT > (10))
+			{
+				osDelayUntil(&PreviousWakeTime, 10);
+			}
+
+			dc_motor.pwm_value = 0;
 			dc_motor.direction_flag = MOTOR_SPIN_STOP;
 			DCMotorRPMSet(&dc_motor);
-			osDelayUntil(&PreviousWakeTime, 500);
-			*/
-
-
-
-
+			osDelayUntil(&PreviousWakeTime, 100);
 		}
 		else if ((ventilator.status_flags & START_CALIBRATION) == START_CALIBRATION)
 		{
@@ -887,20 +735,20 @@ void startDisplayUpdate(void const * argument)
   /* Infinite loop */
 	for(;;)
 	{
-		LCDSetCursorPos(&lcd_display, 1, 0);
-		sprintf(buffer, "VOL %03u  MOT %04lu", ventilator.tidal_volume, TIM3->CNT);
-		LCDSendString(&lcd_display, buffer);
-
-		LCDSetCursorPos(&lcd_display, 3, 0);
-		sprintf(buffer, "RFQ %03u  ANGL", ventilator.respiration_frequency);
-		LCDSendString(&lcd_display, buffer);
-
 		LCDSetCursorPos(&lcd_display, 0, 0);
 		sprintf(buffer, "I:E %03u  T %06lu", ventilator.i_e_ratio, HAL_GetTick());
 		LCDSendString(&lcd_display, buffer);
 
+		LCDSetCursorPos(&lcd_display, 1, 0);
+		sprintf(buffer, "VOL %03u  PMOT %04lu", ventilator.tidal_volume, TIM3->CNT);
+		LCDSendString(&lcd_display, buffer);
+
 		LCDSetCursorPos(&lcd_display, 2, 0);
-		sprintf(buffer, "PRS %03u  ARM %04lu", ventilator.pressure_level_alarm_value, TIM4->CNT);
+		sprintf(buffer, "PRS %03u  PARM %04lu", ventilator.pressure_level_alarm_value, TIM4->CNT);
+		LCDSendString(&lcd_display, buffer);
+
+		LCDSetCursorPos(&lcd_display, 3, 0);
+		sprintf(buffer, "RFQ %03u", ventilator.respiration_frequency);
 		LCDSendString(&lcd_display, buffer);
 
 		osDelayUntil(&PreviousWakeTime, LCD_DISPLAY_UPDATE_TIMESTEP_MS);
@@ -923,7 +771,8 @@ void startMotorEncoder(void const * argument)
   /* Infinite loop */
 	for(;;)
 	{
-		UpdateEncoderParams(&motor_encoder, TIM3->CNT, MOTOR_RPM_CALCULATE_TIMESTEP_MS);
+		/* TODO: Refactor of encoder parameters update function */
+		//UpdateEncoderParams(&motor_encoder, TIM3->CNT, MOTOR_RPM_CALCULATE_TIMESTEP_MS);
 		osDelayUntil(&PreviousWakeTime, MOTOR_RPM_CALCULATE_TIMESTEP_MS);
 	}
   /* USER CODE END startMotorEncoder */
@@ -940,7 +789,9 @@ void startInitTask(void const * argument)
 {
   /* USER CODE BEGIN startInitTask */
 	VentilatorInit(&ventilator);
-
+	/* EXTI interrupt init*/
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 	osThreadResume(updatePotsHandle);
 	osThreadTerminate(initTaskHandle);
   /* USER CODE END startInitTask */
@@ -962,14 +813,28 @@ void startAlarmsTask(void const * argument)
   /* Infinite loop */
 	for(;;)
 	{
-		if ((ventilator.status_flags & SILENCE_ALARMS) == SILENCE_ALARMS)
+		if (((ventilator.status_flags & ENABLE_ROUTINE) == ENABLE_ROUTINE) && !((ventilator.status_flags & START_CALIBRATION) == START_CALIBRATION))
 		{
-			//ventilator.alarm_flags = 0x00;
-			//osDelayUntil(&PreviousWakeTime, ALARM_SILENCE_TIMEOUT_MS);
-			//ventilator.alarm_flags = 0x01;
-			//ToggleSilenceAlarmParam(&ventilator);
+			if (unwind_flag == 0)
+			{
+				dc_motor.pwm_value = 0;
+				dc_motor.direction_flag = MOTOR_SPIN_STOP;
+				DCMotorRPMSet(&dc_motor);
+			}
+			else if (unwind_flag == 1)
+			{
+				dc_motor.pwm_value = 750;
+				dc_motor.direction_flag = MOTOR_SPIN_CW;
+				DCMotorRPMSet(&dc_motor);
+			}
+			else
+			{
+				dc_motor.pwm_value = 750;
+				dc_motor.direction_flag = MOTOR_SPIN_CCW;
+				DCMotorRPMSet(&dc_motor);
+			}
 		}
-		osDelayUntil(&PreviousWakeTime, ALARM_UPDATE_TIMESTEP_MS);
+		osDelayUntil(&PreviousWakeTime, 10);
 	}
   /* USER CODE END startAlarmsTask */
 }
@@ -996,51 +861,6 @@ void startUpdatePots(void const * argument)
   /* USER CODE END startUpdatePots */
 }
 
-/* USER CODE BEGIN Header_startBuzzerUpdate */
-/**
-* @brief Function implementing the buzzerUpdate thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_startBuzzerUpdate */
-void startBuzzerUpdate(void const * argument)
-{
-  /* USER CODE BEGIN startBuzzerUpdate */
-	uint32_t PreviousWakeTime = osKernelSysTick();
-	uint32_t cycle_counter = 0;
-	uint16_t cycles = (uint16_t) (0.5 * (float)(buzzer.period) / buzzer.cycle_time);
-	uint16_t dead_time = (uint16_t) ( (float) buzzer.period * 0.5);
-
-  /* Infinite loop */
-	for(;;)
-	{
-		if (((ventilator.status_flags & SILENCE_ALARMS) == 0) && ((ventilator.status_flags & START_CALIBRATION) == 1))
-		{
-			if (cycle_counter == (cycles - 1))
-			{
-				cycle_counter = 0;
-				osDelayUntil(&PreviousWakeTime, dead_time);
-			}
-
-			cycle_counter++;
-			uint8_t on_time = (uint8_t) (buzzer.cycle_time * buzzer.duty_cycle);
-			uint8_t off_time = (uint8_t) (1.0 - (buzzer.cycle_time * buzzer.duty_cycle));
-
-			HAL_GPIO_WritePin(GPIOB, BuzzerOut_Pin, GPIO_PIN_SET);
-			osDelayUntil(&PreviousWakeTime, on_time);
-
-			HAL_GPIO_WritePin(GPIOB, BuzzerOut_Pin, GPIO_PIN_RESET);
-			osDelayUntil(&PreviousWakeTime, off_time);
-		}
-		else
-		{
-			cycle_counter = 0;
-			osDelayUntil(&PreviousWakeTime, 10);
-		}
-	}
-  /* USER CODE END startBuzzerUpdate */
-}
-
 /* USER CODE BEGIN Header_startCalibRoutine */
 /**
 * @brief Function implementing the calibRoutine thread.
@@ -1064,7 +884,7 @@ void startCalibRoutine(void const * argument)
 			{
 				osThreadSuspend(mainRoutineHandle);
 				PreviousWakeTime = osKernelSysTick();
-				dc_motor.pwm_value = 600;
+				dc_motor.pwm_value = 1000;
 				dc_motor.direction_flag = MOTOR_SPIN_CW;
 				DCMotorRPMSet(&dc_motor);
 				osDelayUntil(&PreviousWakeTime, 3000);
@@ -1074,7 +894,7 @@ void startCalibRoutine(void const * argument)
 				osThreadSuspend(calibRoutineHandle);
 
 				init_count = TIM4->CNT;
-				dc_motor.pwm_value = 600;
+				dc_motor.pwm_value = 1000;
 				dc_motor.direction_flag = MOTOR_SPIN_CCW;
 				DCMotorRPMSet(&dc_motor);
 				process_flag = 1;
@@ -1115,7 +935,8 @@ void startArmEncoder(void const * argument)
   /* Infinite loop */
 	for(;;)
 	{
-		UpdateEncoderParams(&motor_encoder, TIM4->CNT, ARM_RPM_CALCULATE_TIMESTEP_MS);
+		/* TODO: Refactor of encoder parameters update function */
+		//UpdateEncoderParams(&motor_encoder, TIM4->CNT, ARM_RPM_CALCULATE_TIMESTEP_MS);
 		osDelayUntil(&PreviousWakeTime, ARM_RPM_CALCULATE_TIMESTEP_MS);
 	}
   /* USER CODE END startArmEncoder */
@@ -1131,18 +952,20 @@ void startArmEncoder(void const * argument)
 void startDiagnostics(void const * argument)
 {
   /* USER CODE BEGIN startDiagnostics */
-	char buffer[21];
-	uint32_t PreviousWakeTime = osKernelSysTick();
+	osThreadSuspend(diagnosticsTaskHandle);
+	//char buffer[21];
+	//uint32_t PreviousWakeTime = osKernelSysTick();
 
   /* Infinite loop */
 	for(;;)
 	{
-		if ((ventilator.status_flags & ENABLE_ROUTINE) == ENABLE_ROUTINE)
+		/*if ((ventilator.status_flags & ENABLE_ROUTINE) == ENABLE_ROUTINE)
 		{
-			sprintf(buffer, "%04lu,%04lu,%04lu,%04u", HAL_GetTick(), TIM3->CNT, TIM4->CNT, dc_motor.pwm_value);
-			HAL_UART_Transmit(&huart1, (uint8_t *) buffer, sizeof(buffer), 100);
+			//sprintf(buffer, "%04lu,%04lu,%04lu,%04u", HAL_GetTick(), TIM3->CNT, TIM4->CNT, dc_motor.pwm_value);
+			//HAL_UART_Transmit(&huart1, (uint8_t *) buffer, sizeof(buffer), 100);
 		}
-		osDelayUntil(&PreviousWakeTime, 10);
+		osDelayUntil(&PreviousWakeTime, 10);*/
+
 	}
   /* USER CODE END startDiagnostics */
 }

@@ -18,7 +18,7 @@ void DCMotorInit(DCMotor_S *dc_motor_, TIM_HandleTypeDef *timer_handler_)
 
 void DCMotorRPMSet(DCMotor_S *dc_motor_)
 {
-    TIM_OC_InitTypeDef sConfigOC;
+	TIM_OC_InitTypeDef sConfigOC;
 
     sConfigOC.OCMode = TIM_OCMODE_PWM1;
     sConfigOC.Pulse = dc_motor_->pwm_value - 1;
