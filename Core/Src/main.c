@@ -677,7 +677,7 @@ void startMainRoutine(void const * argument)
 			DCMotorRPMSet(&dc_motor);
 
 			//osDelayUntil(&PreviousWakeTime, ventilator.inspiration_period_ms);
-			if (TIM3->CNT < (ventilator.end_angle_pulse - 3))
+			if (TIM4->CNT < (ventilator.end_angle_pulse - 3))
 			{
 				osDelayUntil(&PreviousWakeTime, 10);
 			}
@@ -692,7 +692,7 @@ void startMainRoutine(void const * argument)
 			DCMotorRPMSet(&dc_motor);
 			osDelayUntil(&PreviousWakeTime, ventilator.exhalation_period_ms);
 
-			if (TIM3->CNT > (10))
+			if (TIM4->CNT > (10))
 			{
 				osDelayUntil(&PreviousWakeTime, 10);
 			}
@@ -740,11 +740,11 @@ void startDisplayUpdate(void const * argument)
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 1, 0);
-		sprintf(buffer, "VOL %03u  PMOT %04lu", ventilator.tidal_volume, TIM4->CNT);
+		sprintf(buffer, "VOL %03u  PMOT %04lu", ventilator.tidal_volume, TIM3->CNT);
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 2, 0);
-		sprintf(buffer, "PRS %03u  PARM %04lu", ventilator.pressure_level_alarm_value, TIM3->CNT);
+		sprintf(buffer, "PRS %03u  PARM %04lu", ventilator.pressure_level_alarm_value, TIM4->CNT);
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 3, 0);
