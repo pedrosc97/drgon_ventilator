@@ -5,7 +5,7 @@
  *      Author: Pedro Alonso Sanchez Cruz
  */
 
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 #include "lcd_display_api.h"
 
 void LCDSendCmd(LCDDisplay_S *lcd_disp_, char cmd)
