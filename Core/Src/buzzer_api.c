@@ -4,7 +4,7 @@
  *  Created on: Apr 16, 2020
  *      Author: Pedro Alonso Sanchez Cruz
  */
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 #include "buzzer_api.h"
 
 void BuzzerInit(Buzzer_S *buzzer_)

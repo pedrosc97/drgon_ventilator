@@ -13,7 +13,7 @@
 #define SECONDS_PER_MINUTE		60
 #define RPM_LPF_THRESHOLD		150
 
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 
 typedef enum EncoderModel_E
 {

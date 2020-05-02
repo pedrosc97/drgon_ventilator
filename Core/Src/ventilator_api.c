@@ -5,7 +5,7 @@
  *      Author: Pedro Alonso Sánchez Cruz
  */
 
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 #include "ventilator_api.h"
 
 void VentilatorInit(Ventilator_S *ventilator_)
