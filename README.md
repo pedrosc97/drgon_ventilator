@@ -1,23 +1,13 @@
-# DRGON-01 Ventilator
-Ventilator Repository developed during the COVID-19 Pandemic in Mexico.
+# DRGON Ventilator
 
-Current Status:
-Initial version of the DRGON-01 Ventilator Software.
-- Configured STM32F103C8:
-    - Timers
-        - TIM1: DC Motor PWM Command
-        - TIM2: System Base Timer
-        - TIM3: Encoder Pulse Reading
-    - Buses
-        - I2C Bus 1: LCD Display Communication
-- Created Encoder API (encoder_api.c and encoder_api.h)
-- Created DC Motor API (dc_motor_api.c and dc_motor_api.h)
-- Created LCD Display API (lcd_display_api.c and lcd_display_api.h)
-- Created the following tasks on main:
-    - Master: Used to manage the different tasks such as initialization, calibration, that would only run once.
-    - DC Motor: Test routine for the DC motor control.
-    - LCD Update: Periodically updates the RPM and PWM values.
-    - Encoder: Periodically calculates the RPMs of the encoder.
+### Basic Firmware Release v0.1
+- **DC Motor API**: fully configurable firmware library for interaction with DC Motors.
+- **Encoder API**: fully configurable firmware library for interaction with Encoders.
+- **LCD Display API**: firmware library for interaction with I2C LCD Display.
+- **Potentiometer API**: firmware library for configuration and conversion of potentiometers for parameter input.
+- **Ventilator API**: library for the configuration and parameter conversion and recording of the ventilator values, such as I:E Ratio, Respiration Periods, etc.
+- **Semi-Open Loop Respiration Cycle Routine**: basic respiration cycle, taking into account the different ventilator parameters and with a safety feature for the overshooting of the angle.
 
-
-TODO: Add info and photos.
+### Bugfixes
+- Fixed a bug where the LCD Display would stop updating after a certain amount of time.
+- Fixed a bug where the interrupts were being triggered too early, thus messing up with the initialization of some peripherals.
