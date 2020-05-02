@@ -28,24 +28,24 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-drgon_ventilator_v2.elf \
+drgon_ventilator.elf \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-drgon_ventilator_v2.list \
+drgon_ventilator.list \
 
 OBJCOPY_BIN += \
-drgon_ventilator_v2.bin \
+drgon_ventilator.bin \
 
 
 # All Target
-all: drgon_ventilator_v2.elf secondary-outputs
+all: drgon_ventilator.elf secondary-outputs
 
 # Tool invocations
-drgon_ventilator_v2.elf: $(OBJS) $(USER_OBJS) C:\Users\pedro\Documents\DRGON01\drgon_ventilator_v2\STM32F407VGTX_FLASH.ld
-	arm-none-eabi-gcc -o "drgon_ventilator_v2.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\pedro\Documents\DRGON01\drgon_ventilator_v2\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="drgon_ventilator_v2.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+drgon_ventilator.elf: $(OBJS) $(USER_OBJS) C:\Users\pedro\Documents\DRGON01\drgon_ventilator\STM32F407VGTX_FLASH.ld
+	arm-none-eabi-gcc -o "drgon_ventilator.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\pedro\Documents\DRGON01\drgon_ventilator\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="drgon_ventilator.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -54,13 +54,13 @@ default.size.stdout: $(EXECUTABLES)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-drgon_ventilator_v2.list: $(EXECUTABLES)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "drgon_ventilator_v2.list"
+drgon_ventilator.list: $(EXECUTABLES)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "drgon_ventilator.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
-drgon_ventilator_v2.bin: $(EXECUTABLES)
-	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "drgon_ventilator_v2.bin"
+drgon_ventilator.bin: $(EXECUTABLES)
+	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "drgon_ventilator.bin"
 	@echo 'Finished building: $@'
 	@echo ' '
 

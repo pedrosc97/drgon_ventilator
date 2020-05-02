@@ -1,5 +1,5 @@
 
-drgon_ventilator_v2.elf:     file format elf32-littlearm
+drgon_ventilator.elf:     file format elf32-littlearm
 
 Sections:
 Idx Name          Size      VMA       LMA       File off  Algn
@@ -39,11 +39,11 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING
  17 .debug_line   00013ce1  00000000  00000000  00065e3a  2**0
                   CONTENTS, READONLY, DEBUGGING
- 18 .debug_str    000dbfeb  00000000  00000000  00079b1b  2**0
+ 18 .debug_str    000dbfe8  00000000  00000000  00079b1b  2**0
                   CONTENTS, READONLY, DEBUGGING
- 19 .comment      0000007b  00000000  00000000  00155b06  2**0
+ 19 .comment      0000007b  00000000  00000000  00155b03  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  00006830  00000000  00000000  00155b84  2**2
+ 20 .debug_frame  00006830  00000000  00000000  00155b80  2**2
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
