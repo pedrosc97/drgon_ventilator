@@ -1,5 +1,5 @@
 # DRGON Ventilator
-### Basic Firmware Release
+### Basic Firmware Release v0.1
 - **DC Motor API**: fully configurable firmware library for interaction with DC Motors.
 - **Encoder API**: fully configurable firmware library for interaction with Encoders.
 - **LCD Display API**: firmware library for interaction with I2C LCD Display.
