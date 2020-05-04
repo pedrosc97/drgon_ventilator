@@ -76,6 +76,8 @@ void Error_Handler(void);
 #define SysOnLED_GPIO_Port GPIOC
 #define MotorPWMOut_Pin GPIO_PIN_1
 #define MotorPWMOut_GPIO_Port GPIOA
+#define PrsrSnsrDRDY_Pin GPIO_PIN_4
+#define PrsrSnsrDRDY_GPIO_Port GPIOA
 #define VolumePotIn_Pin GPIO_PIN_6
 #define VolumePotIn_GPIO_Port GPIOA
 #define IERatioPotIn_Pin GPIO_PIN_7

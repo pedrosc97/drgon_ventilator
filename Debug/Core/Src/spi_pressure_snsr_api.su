@@ -1,0 +1,6 @@
+spi_pressure_snsr_api.c:15:6:SPIPrsrSnsrInit	16	static
+spi_pressure_snsr_api.c:22:6:SPSReadEEPROMCfg	16	static
+spi_pressure_snsr_api.c:32:6:SPSInitSnsrADC	16	static
+spi_pressure_snsr_api.c:37:6:SPSSnsrADCTempRead	16	static
+spi_pressure_snsr_api.c:44:6:SPSSnsrADCPressureRead	16	static
+spi_pressure_snsr_api.c:49:6:SPSCompPrsrReading	16	static

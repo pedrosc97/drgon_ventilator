@@ -31,6 +31,8 @@
 #include "potentiometer_api.h"
 #include "buzzer_api.h"
 #include "ventilator_api.h"
+#include "spi_pressure_snsr_api.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -59,6 +61,8 @@ DMA_HandleTypeDef hdma_adc1;
 I2C_HandleTypeDef hi2c1;
 
 SPI_HandleTypeDef hspi1;
+DMA_HandleTypeDef hdma_spi1_rx;
+DMA_HandleTypeDef hdma_spi1_tx;
 
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
@@ -85,6 +89,7 @@ Encoder_S			motor_encoder;
 Buzzer_S			buzzer;
 Potentiometer_S		pot_controls_a[TOTAL_CONTROLS_COUNT];
 Ventilator_S		ventilator;
+SPIPressureSensor_S pressure_sensor;
 
 uint32_t			prev_systick = 0;
 volatile uint8_t 	unwind_flag = 0;
@@ -216,6 +221,7 @@ int main(void)
   LCDInit(&lcd_display, &hi2c1);
   PotControlsInit(pot_controls_a);
   BuzzerInit(&buzzer);
+  SPIPrsrSnsrInit(&pressure_sensor, &hspi1);
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -466,8 +472,8 @@ static void MX_SPI1_Init(void)
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_HARD_INPUT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -721,6 +727,12 @@ static void MX_DMA_Init(void)
   /* DMA2_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+  /* DMA2_Stream2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
+  /* DMA2_Stream3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
 
 }
 
@@ -749,7 +761,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, AlarmLED8_Pin|SysOnLED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, MotorCW_Pin|MotorCCW_Pin|PSnsrCSADCOut_Pin|PSnsrCSEEOut_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, MotorCW_Pin|MotorCCW_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOD, PSnsrCSADCOut_Pin|PSnsrCSEEOut_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : AlarmLED3_Pin AlarmLED4_Pin AlarmLED5_Pin AlarmLED6_Pin 
                            AlarmLED7_Pin AlarmLED1_Pin AlarmLED2_Pin */
@@ -767,16 +782,29 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PrsrSnsrDRDY_Pin */
+  GPIO_InitStruct.Pin = PrsrSnsrDRDY_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(PrsrSnsrDRDY_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : StartStopBtnIn_Pin EditBtnIn_Pin CalibrationBtnIn_Pin AlarmSilenceBtnIn_Pin */
   GPIO_InitStruct.Pin = StartStopBtnIn_Pin|EditBtnIn_Pin|CalibrationBtnIn_Pin|AlarmSilenceBtnIn_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : MotorCW_Pin MotorCCW_Pin PSnsrCSADCOut_Pin PSnsrCSEEOut_Pin */
-  GPIO_InitStruct.Pin = MotorCW_Pin|MotorCCW_Pin|PSnsrCSADCOut_Pin|PSnsrCSEEOut_Pin;
+  /*Configure GPIO pins : MotorCW_Pin MotorCCW_Pin */
+  GPIO_InitStruct.Pin = MotorCW_Pin|MotorCCW_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PSnsrCSADCOut_Pin PSnsrCSEEOut_Pin */
+  GPIO_InitStruct.Pin = PSnsrCSADCOut_Pin|PSnsrCSEEOut_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
@@ -799,8 +827,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_initTaskFn */
 void initTaskFn(void const * argument)
 {
-  /* USER CODE BEGIN initTaskFn */
-
+  /* USER CODE BEGIN 5 */
 	VentilatorInit(&ventilator);
 
 	/* EXTI interrupt init*/
@@ -809,8 +836,7 @@ void initTaskFn(void const * argument)
 
 	osThreadResume(userInputHandle);
 	osThreadTerminate(initTaskHandle);
-
-  /* USER CODE END initTaskFn */
+  /* USER CODE END 5 */ 
 }
 
 /* USER CODE BEGIN Header_mainRoutineFn */
@@ -1115,6 +1141,17 @@ void alarmMonitorFn(void const * argument)
 void pressureSnsrFn(void const * argument)
 {
   /* USER CODE BEGIN pressureSnsrFn */
+	HAL_GPIO_WritePin(PSnsrCSADCOut_GPIO_Port, PSnsrCSADCOut_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(PSnsrCSEEOut_GPIO_Port, PSnsrCSEEOut_Pin, GPIO_PIN_RESET);
+
+	uint8_t buffer_tx[2];
+	uint8_t buffer_rx[13];
+
+	buffer_tx[0] = EAD_EEPROM_CMD;
+	buffer_tx[1] = PRESSURE_RANGE_BYTE_2;
+
+	HAL_SPI_TransmitReceive_DMA(pressure_sensor.spi_handle, buffer_tx, buffer_rx, 2);
+
   /* Infinite loop */
   for(;;)
   {

@@ -1,7 +1,7 @@
 /*
  * spi_pressure_snsr_api.h
  *
- *  Created on: May 1, 2020
+ *  Created on: April 30, 2020
  *      Author: Pedro Alonso Sanchez Cruz
  */
 
@@ -13,6 +13,7 @@
 // Commands for SPI Communication
 
 #define EAD_EEPROM_CMD		0x03
+#define WREG_CMD			0x40
 
 /*
  * Steps:
@@ -145,10 +146,10 @@
 #define SHAPE_COEF_3_BYTE_2			304u
 #define SHAPE_COEF_3_BYTE_3			305u
 
-
 typedef struct SPIPressureSensor_S
 {
-	ADC_HandleTypeDef	*adc_handle;
+	SPI_HandleTypeDef	*spi_handle;
+	float				compensated_pressure;
 	float				current_pressure;
 	float				current_temperature;
 	float				pressure_range;
@@ -160,7 +161,11 @@ typedef struct SPIPressureSensor_S
 	float				shape_coefficients[4];
 } SPIPressureSensor_S;
 
-void SPIPressureSensorInit(SPIPressureSensor_S *sensor_, ADC_HandleTypeDef *adc_);
-void ReadEEPROM(uint16_t *address_);
+void SPIPrsrSnsrInit(SPIPressureSensor_S *sensor_, SPI_HandleTypeDef *spi_);
+void SPSReadEEPROMCfg(SPIPressureSensor_S *sensor_);
+void SPSInitSnsrADC(SPIPressureSensor_S *sensor_);
+void SPSSnsrADCTempRead(SPIPressureSensor_S *sensor_);
+void SPSSnsrADCPressureRead(SPIPressureSensor_S *sensor_);
+void SPSCompPrsrReading(SPIPressureSensor_S *sensor_);
 
 #endif /* INC_SPI_PRESSURE_SNSR_API_H_ */
