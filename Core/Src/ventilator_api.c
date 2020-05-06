@@ -5,13 +5,14 @@
  *      Author: Pedro Alonso Sánchez Cruz
  */
 
-#include "stm32f4xx_hal.h"
 #include "ventilator_api.h"
 
 void VentilatorInit(Ventilator_S *ventilator_)
 {
 	ventilator_->status_flags = DISABLE_ALL;
 	ventilator_->alarm_flags = DISABLE_ALL;
+	ventilator_->prev_systick = 0;
+	ventilator_->unwind_flag = 0;
 }
 
 void UpdateVentilatorParams(Ventilator_S *ventilator_, Potentiometer_S *potentiometer_)
@@ -89,5 +90,21 @@ void ToggleCalibrationParam(Ventilator_S *ventilator_)
 	else
 	{
 		ventilator_->status_flags &= STOP_CALIBRATION;
+	}
+}
+
+void ToggleUnwindParam(Ventilator_S *ventilator_)
+{
+	if (ventilator_->unwind_flag == UNWIND_STOP)
+	{
+		ventilator_->unwind_flag = UNWIND_CW;
+	}
+	else if (ventilator_->unwind_flag == UNWIND_CW)
+	{
+		ventilator_->unwind_flag = UNWIND_CCW;
+	}
+	else
+	{
+		ventilator_->unwind_flag = UNWIND_STOP;
 	}
 }

@@ -86,16 +86,12 @@ void Error_Handler(void);
 #define PressureLvlPotIn_GPIO_Port GPIOB
 #define StartStopBtnIn_Pin GPIO_PIN_12
 #define StartStopBtnIn_GPIO_Port GPIOE
-#define StartStopBtnIn_EXTI_IRQn EXTI15_10_IRQn
 #define EditBtnIn_Pin GPIO_PIN_13
 #define EditBtnIn_GPIO_Port GPIOE
-#define EditBtnIn_EXTI_IRQn EXTI15_10_IRQn
 #define CalibrationBtnIn_Pin GPIO_PIN_14
 #define CalibrationBtnIn_GPIO_Port GPIOE
-#define CalibrationBtnIn_EXTI_IRQn EXTI15_10_IRQn
 #define AlarmSilenceBtnIn_Pin GPIO_PIN_15
 #define AlarmSilenceBtnIn_GPIO_Port GPIOE
-#define AlarmSilenceBtnIn_EXTI_IRQn EXTI15_10_IRQn
 #define ArmEncoderA_Pin GPIO_PIN_12
 #define ArmEncoderA_GPIO_Port GPIOD
 #define ArmEncoderB_Pin GPIO_PIN_13

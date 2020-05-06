@@ -8,6 +8,7 @@
 #ifndef INC_VENTILATOR_API_H_
 #define INC_VENTILATOR_API_H_
 
+#include "stm32f4xx_hal.h"
 #include "potentiometer_api.h"
 
 #define ADC_MAX_VAL						0xFFF
@@ -37,6 +38,13 @@ typedef enum VentilatorStsCfg_E
 	DISABLE_ALL = 0x00,
 } VentilatorStsCfg_E;
 
+typedef enum VentilatorUnwindCfg_E
+{
+	UNWIND_STOP = 0,
+	UNWIND_CW = 1,
+	UNWIND_CCW = 2,
+} VentilatorUnwindCfg_E;
+
 typedef struct Ventilator_S
 {
 	uint8_t		i_e_ratio; 						// 1 to 4
@@ -50,8 +58,10 @@ typedef struct Ventilator_S
 	uint16_t	motor_pwm_value_in;
 	uint16_t	motor_pwm_value_out;
 
+	volatile uint8_t	unwind_flag;
 	volatile uint8_t	status_flags;	// 0000 [calbration_btn_1][calibration_btn_0][silence_alarms][enable_routine]
 	volatile uint8_t	alarm_flags;	// 0000 0000
+	volatile uint32_t	prev_systick;
 
 } Ventilator_S;
 
@@ -60,5 +70,6 @@ void UpdateVentilatorParams(Ventilator_S *ventilator_, Potentiometer_S *potentio
 void ToggleRoutineEnaParam(Ventilator_S *ventilator_);
 void ToggleSilenceAlarmParam(Ventilator_S *ventilator_);
 void ToggleCalibrationParam(Ventilator_S *ventilator_);
+void ToggleUnwindParam(Ventilator_S *ventilator_);
 
 #endif /* INC_VENTILATOR_API_H_ */

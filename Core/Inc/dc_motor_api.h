@@ -8,14 +8,17 @@
 #ifndef INC_DC_MOTOR_API_H_
 #define INC_DC_MOTOR_API_H_
 
+#include "stm32f4xx_hal.h"
+#include "main.h"
+
 #define DC_MOTOR_CW_PIN 			GPIO_PIN_4
 #define DC_MOTOR_CCW_PIN			GPIO_PIN_5
+#define MAX_MOTOR_VOLTAGE			12.0f
+#define MAX_MOTOR_PWM_VALUE			8000.0f
 
 typedef struct DCMotor_S
 {
 	TIM_HandleTypeDef 	*motor_pwm_ctrl;
-	uint16_t			cw_gpio_pin;
-	uint16_t			ccw_gpio_pin;
 	uint16_t 			pwm_value;
 	uint8_t				direction_flag;
 } DCMotor_S;
@@ -28,7 +31,7 @@ typedef enum DCMotorDirection_E
 } DCMotorDirection_E;
 
 void DCMotorInit(DCMotor_S *dc_motor_, TIM_HandleTypeDef *timer_handler_);
-void DCMotorRPMSet(DCMotor_S *dc_motor_);
-void DCMotorRPMStop(DCMotor_S *dc_motor_);
+void DCMotorVoltageSet(DCMotor_S *dc_motor_, float *voltage_);
+void DCMotorStop(DCMotor_S *dc_motor_);
 
 #endif /* INC_DC_MOTOR_API_H_ */

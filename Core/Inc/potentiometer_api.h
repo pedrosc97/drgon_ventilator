@@ -8,6 +8,8 @@
 #ifndef INC_POTENTIOMETER_API_H_
 #define INC_POTENTIOMETER_API_H_
 
+#include "stm32f4xx_hal.h"
+
 typedef enum PotControls_E
 {
 	TIDAL_VOLUME_CONTROL, 			// PA0

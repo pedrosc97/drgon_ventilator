@@ -1,4 +1,5 @@
 Core/Src/ventilator_api.o: ../Core/Src/ventilator_api.c \
+ ../Core/Inc/ventilator_api.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
  ../Core/Inc/stm32f4xx_hal_conf.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
@@ -32,7 +33,9 @@ Core/Src/ventilator_api.o: ../Core/Src/ventilator_api.c \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
- ../Core/Inc/ventilator_api.h ../Core/Inc/potentiometer_api.h
+ ../Core/Inc/potentiometer_api.h
+
+../Core/Inc/ventilator_api.h:
 
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 
@@ -99,7 +102,5 @@ Core/Src/ventilator_api.o: ../Core/Src/ventilator_api.c \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
-
-../Core/Inc/ventilator_api.h:
 
 ../Core/Inc/potentiometer_api.h:

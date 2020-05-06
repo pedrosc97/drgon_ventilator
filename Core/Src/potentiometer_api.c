@@ -5,7 +5,6 @@
  *      Author: Pedro Alonso Sanchez Cruz
  */
 
-#include "stm32f4xx_hal.h"
 #include "potentiometer_api.h"
 
 void PotControlsInit(volatile Potentiometer_S *pot_array_)

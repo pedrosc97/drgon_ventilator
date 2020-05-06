@@ -8,15 +8,19 @@
 #ifndef INC_BUZZER_API_H_
 #define INC_BUZZER_API_H_
 
+#include "stm32f4xx_hal.h"
+
 #define DEFAULT_BUZZER_DUTY_CYCLE		0.5
 #define DEFAULT_BUZZER_PERIOD_MS		1000
 #define DEFAULT_BUZZER_CYCLE_TIME_MS	2
+#define SYS_CLOCK_FREQUENCY				80000000.0f
 
 typedef struct Buzzer_S
 {
-	float		duty_cycle;
-	float		cycle_time;
-	uint16_t	period;
+	TIM_HandleTypeDef	*timer;
+	uint16_t			sound_frequency_hz;
+	uint16_t			cycle_frequency_hz;
+	uint8_t				sound_volume_percentage;
 } Buzzer_S;
 
 void BuzzerInit(Buzzer_S *buzzer_);

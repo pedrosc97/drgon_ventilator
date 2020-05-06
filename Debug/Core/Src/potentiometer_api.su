@@ -1,2 +1,2 @@
-potentiometer_api.c:11:6:PotControlsInit	16	static
-potentiometer_api.c:19:6:PotControlsValueUpdate	16	static
+potentiometer_api.c:10:6:PotControlsInit	16	static
+potentiometer_api.c:18:6:PotControlsValueUpdate	16	static
