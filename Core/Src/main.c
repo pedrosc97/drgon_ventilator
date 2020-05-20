@@ -136,7 +136,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 		if ((WakeTime - ventilator.prev_systick) > 500)
 		{
-			ToggleCalibrationParam(&ventilator);
+			//ToggleCalibrationParam(&ventilator);
 			ventilator.prev_systick = WakeTime;
 			osThreadResume(calibRoutineHandle);
 		}
@@ -158,7 +158,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		uint32_t	WakeTime = osKernelSysTick();
 		if ((WakeTime - ventilator.prev_systick) > 500)
 		{
-			ToggleRoutineEnaParam(&ventilator);
+			//ToggleRoutineEnaParam(&ventilator);
 			ventilator.prev_systick = WakeTime;
 		}
 	}
@@ -519,7 +519,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM3_Init 2 */
-
+  HAL_TIM_Encoder_Start_IT(&htim3, htim3.Channel);
   /* USER CODE END TIM3_Init 2 */
 
 }
@@ -568,7 +568,7 @@ static void MX_TIM4_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM4_Init 2 */
-
+  HAL_TIM_Encoder_Start_IT(&htim4, htim4.Channel);
   /* USER CODE END TIM4_Init 2 */
 
 }
@@ -814,18 +814,115 @@ void mainRoutineFn(void const * argument)
   /* Infinite loop */
 	for(;;)
 	{
-		if (((ventilator.status_flags & ENABLE_ROUTINE) == ENABLE_ROUTINE) && !((ventilator.status_flags & START_CALIBRATION) == START_CALIBRATION))
+		if (ventilator.main_state_machine == MAIN_STATE_SETUP)
 		{
-			osDelayUntil(&PreviousWakeTime, 100);
+			if (ventilator.setup_state_machine == SETUP_STATE_CALIBRATION)
+			{
+				if (ventilator.calibration_state_machine == CALIBRATION_STATE_UNWIND)
+				{
+
+				}
+				else if (ventilator.calibration_state_machine == CALIBRATION_STATE_WAIT_AMBU)
+				{
+
+				}
+				else if (ventilator.calibration_state_machine == CALIBRATION_STATE_WIND)
+				{
+
+				}
+				else
+				{
+
+				}
+			}
+			else if (ventilator.setup_state_machine == SETUP_STATE_MANUAL_SPIN)
+			{
+				if (ventilator.manual_spin_state_machine == MANUAL_SPIN_STATE_UNWIND)
+				{
+
+				}
+				else if (ventilator.manual_spin_state_machine == MANUAL_SPIN_STATE_WIND)
+				{
+
+				}
+				else
+				{
+
+				}
+			}
+			else
+			{
+
+			}
 		}
-		else if ((ventilator.status_flags & START_CALIBRATION) == START_CALIBRATION)
+		else if (ventilator.main_state_machine == MAIN_STATE_RESPIRATION)
 		{
-			osDelayUntil(&PreviousWakeTime, 10);
+			if (ventilator.respiration_state_machine == RESPIRATION_STATE_FORCED_VOLUME)
+			{
+				if (ventilator.forced_volume_state_machine == FORCED_VOLUME_STATE_GENERATE_TRAJECTORY)
+				{
+
+				}
+				else if (ventilator.forced_volume_state_machine == FORCED_VOLUME_STATE_INHALE)
+				{
+
+				}
+				else if (ventilator.forced_volume_state_machine == FORCED_VOLUME_STATE_INHALE_PAUSE)
+				{
+
+				}
+				else if (ventilator.forced_volume_state_machine == FORCED_VOLUME_STATE_EXHALE)
+				{
+
+				}
+				else if (ventilator.forced_volume_state_machine == FORCED_VOLUME_STATE_EXHALE_PAUSE)
+				{
+
+				}
+				else
+				{
+
+				}
+			}
+			else if (ventilator.respiration_state_machine == RESPIRATION_STATE_ASSISTED_VOLUME)
+			{
+				if (ventilator.assisted_volume_state_machine == ASSISTED_VOLUME_STATE_GENERATE_TRAJECTORY)
+				{
+
+				}
+				else if (ventilator.assisted_volume_state_machine == ASSISTED_VOLUME_STATE_WAIT_FOR_RESPIRATION)
+				{
+
+				}
+				else if (ventilator.assisted_volume_state_machine == ASSISTED_VOLUME_STATE_INHALE)
+				{
+
+				}
+				else if (ventilator.assisted_volume_state_machine == ASSISTED_VOLUME_STATE_INHALE_PAUSE)
+				{
+
+				}
+				else if (ventilator.assisted_volume_state_machine == ASSISTED_VOLUME_STATE_EXHALE)
+				{
+
+				}
+				else if (ventilator.assisted_volume_state_machine == ASSISTED_VOLUME_STATE_EXHALE_PAUSE)
+				{
+
+				}
+				else
+				{
+
+				}
+			}
+			else
+			{
+
+			}
 		}
 		else
 		{
-			DCMotorStop(&dc_motor);
-			osDelayUntil(&PreviousWakeTime, 10);
+
 		}
 	}
   /* USER CODE END mainRoutineFn */
@@ -853,11 +950,11 @@ void displayUIFn(void const * argument)
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 1, 0);
-		sprintf(buffer, "VOL %03u", ventilator.tidal_volume);
+		sprintf(buffer, "VOL %03u T4 %03u", ventilator.tidal_volume, TIM4->CNT);
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 2, 0);
-		sprintf(buffer, "PRS %03u", ventilator.pressure_level_alarm_value);
+		sprintf(buffer, "PRS %03u T3 %03u", ventilator.pressure_level_alarm_value, TIM3->CNT);
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 3, 0);
@@ -1025,28 +1122,10 @@ void alarmMonitorFn(void const * argument)
 {
   /* USER CODE BEGIN alarmMonitorFn */
 	uint32_t PreviousWakeTime = osKernelSysTick();
-	float 		motor_voltage_pos = MOTOR_DEBUG_VOLTAGE_VALUE;
-	float 		motor_voltage_neg = -MOTOR_DEBUG_VOLTAGE_VALUE;
-	//osDelayUntil(&PreviousWakeTime, 1000);
 
   /* Infinite loop */
 	for(;;)
 	{
-		if (!((ventilator.status_flags & ENABLE_ROUTINE) == ENABLE_ROUTINE) && !((ventilator.status_flags & START_CALIBRATION) == START_CALIBRATION))
-		{
-			if (ventilator.unwind_flag == UNWIND_STOP)
-			{
-				DCMotorStop(&dc_motor);
-			}
-			else if (ventilator.unwind_flag == UNWIND_CW)
-			{
-				DCMotorVoltageSet(&dc_motor, &motor_voltage_neg);
-			}
-			else
-			{
-				DCMotorVoltageSet(&dc_motor, &motor_voltage_pos);
-			}
-		}
 		osDelayUntil(&PreviousWakeTime, ALARM_MONITOR_CYCLE_TIME_MS);
 	}
   /* USER CODE END alarmMonitorFn */
