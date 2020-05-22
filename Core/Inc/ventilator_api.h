@@ -165,6 +165,9 @@ typedef struct Ventilator_S
 	volatile VentilatorForcedVolumeStateMachine_E		forced_volume_state_machine;
 	volatile VentilatorAssistedVolumeStateMachine_E		assisted_volume_state_machine;
 
+	volatile uint16_t cycle_counter;
+	volatile uint8_t  parameters_changed;
+
 	/* Alarms */
 	volatile VentilatorAlarms_E			ventilator_alarms;
 	volatile VentilatorAlarmsConfig_E	ventilator_alarms_config;

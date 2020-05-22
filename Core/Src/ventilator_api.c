@@ -24,6 +24,7 @@ void VentilatorInit(Ventilator_S *ventilator_)
 	ventilator_->respiration_state_machine 		= RESPIRATION_STATE_STANDBY;
 	ventilator_->forced_volume_state_machine 	= FORCED_VOLUME_STATE_STANDBY;
 	ventilator_->assisted_volume_state_machine 	= ASSISTED_VOLUME_STATE_STANDBY;
+	ventilator_->cycle_counter					= 0;
 }
 
 void UpdateVentilatorParams(Ventilator_S *ventilator_, Potentiometer_S *potentiometer_)

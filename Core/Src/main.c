@@ -49,6 +49,9 @@
 #define MOTOR_DEBUG_VOLTAGE_VALUE			2.0f
 #define ALARM_MONITOR_CYCLE_TIME_MS			10
 #define ALARM_SILENCE_TIMEOUT_MS			2000
+#define MAIN_ROUTINE_CYCLE_TIME_MS			10
+#define BUTTON_INPUT_DEBOUNCE_PERIOD_MS		500
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -124,31 +127,86 @@ void pressureSnsrFn(void const * argument);
 /* USER CODE BEGIN 0 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-
 	if (GPIO_Pin == EditBtnIn_Pin)
 	{
-		osThreadResume(userInputHandle);
+		uint32_t	WakeTime = osKernelSysTick();
+
+		if ((WakeTime - ventilator.prev_systick) > BUTTON_INPUT_DEBOUNCE_PERIOD_MS)
+		{
+			switch(ventilator.main_state_machine)
+			{
+				case MAIN_STATE_STANDBY:
+				case MAIN_STATE_RESPIRATION:
+					osThreadResume(userInputHandle);
+					break;
+
+				case MAIN_STATE_SETUP:
+					switch(ventilator.setup_state_machine)
+					{
+						case SETUP_STATE_STANDBY:
+							ventilator.setup_state_machine = SETUP_STATE_MANUAL_SPIN;
+							ventilator.manual_spin_state_machine = MANUAL_SPIN_STATE_STOP;
+							break;
+
+						case SETUP_STATE_MANUAL_SPIN:
+							switch(ventilator.manual_spin_state_machine)
+							{
+								case MANUAL_SPIN_STATE_UNWIND:
+									ventilator.manual_spin_state_machine = MANUAL_SPIN_STATE_WIND;
+									break;
+
+								case MANUAL_SPIN_STATE_WIND:
+									ventilator.manual_spin_state_machine = MANUAL_SPIN_STATE_STOP;
+									break;
+
+								case MANUAL_SPIN_STATE_STOP:
+									ventilator.manual_spin_state_machine = MANUAL_SPIN_STATE_UNWIND;
+									break;
+							}
+							break;
+					}
+					break;
+			}
+			ventilator.prev_systick = WakeTime;
+		}
 	}
 
 	if (GPIO_Pin == CalibrationBtnIn_Pin)
 	{
 		uint32_t	WakeTime = osKernelSysTick();
 
-		if ((WakeTime - ventilator.prev_systick) > 500)
+		if ((WakeTime - ventilator.prev_systick) > BUTTON_INPUT_DEBOUNCE_PERIOD_MS)
 		{
-			//ToggleCalibrationParam(&ventilator);
+			switch(ventilator.main_state_machine)
+			{
+				case MAIN_STATE_STANDBY:
+					ventilator.main_state_machine = MAIN_STATE_SETUP;
+					break;
+				case MAIN_STATE_SETUP:
+					switch(ventilator.setup_state_machine)
+					{
+						case SETUP_STATE_STANDBY:
+							ventilator.setup_state_machine = SETUP_STATE_CALIBRATION;
+							ventilator.calibration_state_machine = CALIBRATION_STATE_UNWIND;
+							break;
+						case SETUP_STATE_CALIBRATION:
+							if (ventilator.calibration_state_machine == CALIBRATION_STATE_WAIT_AMBU)
+							{
+								ventilator.calibration_state_machine = CALIBRATION_STATE_WIND;
+							}
+							break;
+					}
+					break;
+			}
 			ventilator.prev_systick = WakeTime;
-			osThreadResume(calibRoutineHandle);
 		}
 	}
 
 	if (GPIO_Pin == AlarmSilenceBtnIn_Pin)
 	{
 		uint32_t	WakeTime = osKernelSysTick();
-		if ((WakeTime - ventilator.prev_systick) > 500)
+		if ((WakeTime - ventilator.prev_systick) > BUTTON_INPUT_DEBOUNCE_PERIOD_MS)
 		{
-			//ToggleSilenceAlarmParam(&ventilator);
-			ToggleUnwindParam(&ventilator);
 			ventilator.prev_systick = WakeTime;
 		}
 	}
@@ -156,9 +214,24 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	if (GPIO_Pin == StartStopBtnIn_Pin)
 	{
 		uint32_t	WakeTime = osKernelSysTick();
-		if ((WakeTime - ventilator.prev_systick) > 500)
+		if ((WakeTime - ventilator.prev_systick) > BUTTON_INPUT_DEBOUNCE_PERIOD_MS)
 		{
-			//ToggleRoutineEnaParam(&ventilator);
+
+			switch(ventilator.main_state_machine)
+			{
+				case MAIN_STATE_SETUP:
+				case MAIN_STATE_RESPIRATION:
+					ventilator.main_state_machine = MAIN_STATE_STANDBY;
+					ventilator.forced_volume_state_machine = FORCED_VOLUME_STATE_STANDBY;
+					ventilator.assisted_volume_state_machine = ASSISTED_VOLUME_STATE_STANDBY;
+					ventilator.setup_state_machine = SETUP_STATE_STANDBY;
+					ventilator.calibration_state_machine = CALIBRATION_STATE_STOP;
+					ventilator.manual_spin_state_machine = MANUAL_SPIN_STATE_STOP;
+					break;
+				case MAIN_STATE_STANDBY:
+					ventilator.main_state_machine = MAIN_STATE_RESPIRATION;
+					break;
+			}
 			ventilator.prev_systick = WakeTime;
 		}
 	}
@@ -814,116 +887,135 @@ void mainRoutineFn(void const * argument)
   /* Infinite loop */
 	for(;;)
 	{
-		if (ventilator.main_state_machine == MAIN_STATE_SETUP)
+		switch(ventilator.main_state_machine)
 		{
-			if (ventilator.setup_state_machine == SETUP_STATE_CALIBRATION)
-			{
-				if (ventilator.calibration_state_machine == CALIBRATION_STATE_UNWIND)
+			case MAIN_STATE_SETUP:
+				switch(ventilator.setup_state_machine)
 				{
-
+					case SETUP_STATE_CALIBRATION:
+						switch(ventilator.calibration_state_machine)
+						{
+							case CALIBRATION_STATE_UNWIND:
+								if (ventilator.cycle_counter == 0)
+								{
+									DCMotorVoltageSet(&dc_motor, -MOTOR_DEBUG_VOLTAGE_VALUE);
+									ventilator.cycle_counter++;
+								}
+								else if (ventilator.cycle_counter < (CALIBRATION_UNWIND_TIME_MS / MAIN_ROUTINE_CYCLE_TIME_MS))
+								{
+									ventilator.cycle_counter++;
+								}
+								else
+								{
+									DCMotorStop(&dc_motor);
+									ventilator.cycle_counter = 0;
+									ventilator.calibration_state_machine = CALIBRATION_STATE_WAIT_AMBU;
+								}
+								break;
+							case CALIBRATION_STATE_WAIT_AMBU:
+								DCMotorStop(&dc_motor);
+								break;
+							case CALIBRATION_STATE_WIND:
+								if (ventilator.cycle_counter == 0)
+								{
+									uint32_t init_count = arm_encoder.timer->CNT;
+									DCMotorVoltageSet(&dc_motor, MOTOR_DEBUG_VOLTAGE_VALUE);
+									ventilator.cycle_counter++;
+								}
+								else if (arm_encoder.timer->CNT != init_count)
+								{
+									DCMotorStop(&dc_motor);
+									motor_encoder.timer->CNT = 0;
+									arm_encoder.timer->CNT = 0;
+									ventilator.cycle_counter = 0;
+									ventilator.calibration_state_machine = CALIBRATION_STATE_STOP;
+								}
+								else
+								{
+									ventilator.cycle_counter++;
+								}
+								break;
+							case CALIBRATION_STATE_STOP:
+								DCMotorStop(&dc_motor);
+								ventilator.setup_state_machine = SETUP_STATE_STANDBY;
+								ventilator.main_state_machine = MAIN_STATE_STANDBY;
+								break;
+						}
+					case SETUP_STATE_MANUAL_SPIN:
+						switch(ventilator.manual_spin_state_machine)
+						{
+							case MANUAL_SPIN_STATE_UNWIND:
+								DCMotorVoltageSet(&dc_motor, -MOTOR_DEBUG_VOLTAGE_VALUE);
+								break;
+							case MANUAL_SPIN_STATE_WIND:
+								DCMotorVoltageSet(&dc_motor, MOTOR_DEBUG_VOLTAGE_VALUE);
+								break;
+							case MANUAL_SPIN_STATE_STOP:
+								DCMotorStop(&dc_motor);
+								break;
+						}
+					case SETUP_STATE_STANDBY:
+						DCMotorStop(&dc_motor);
+						ventilator.cycle_counter = 0;
+						break;
 				}
-				else if (ventilator.calibration_state_machine == CALIBRATION_STATE_WAIT_AMBU)
+			case MAIN_STATE_RESPIRATION:
+				switch(ventilator.respiration_state_machine)
 				{
-
+					case RESPIRATION_STATE_FORCED_VOLUME:
+						switch(ventilator.forced_volume_state_machine)
+						{
+							case FORCED_VOLUME_STATE_GENERATE_TRAJECTORY:
+								break;
+							case FORCED_VOLUME_STATE_INHALE:
+								break;
+							case FORCED_VOLUME_STATE_INHALE_PAUSE:
+								break;
+							case FORCED_VOLUME_STATE_EXHALE:
+								break;
+							case FORCED_VOLUME_STATE_EXHALE_PAUSE:
+								break;
+						}
+						break;
+					case RESPIRATION_STATE_ASSISTED_VOLUME:
+						switch(ventilator.assisted_volume_state_machine)
+						{
+							case ASSISTED_VOLUME_STATE_GENERATE_TRAJECTORY:
+								break;
+							case ASSISTED_VOLUME_STATE_WAIT_FOR_RESPIRATION:
+								break;
+							case ASSISTED_VOLUME_STATE_INHALE:
+								break;
+							case ASSISTED_VOLUME_STATE_INHALE_PAUSE:
+								break;
+							case ASSISTED_VOLUME_STATE_EXHALE:
+								break;
+							case ASSISTED_VOLUME_STATE_EXHALE_PAUSE:
+								break;
+						}
+						break;
+					case RESPIRATION_STATE_STANDBY:
+						/*
+						 * switch(respiration mode switch value)
+						 * {
+						 * 		case ASSISTED:
+						 * 			ventilator.respiration_state_machine = RESPIRATION_STATE_ASSISTED_VOLUME;
+						 * 			ventilator.assisted_volume_state_machine = ASSISTED_VOLUME_STATE_GENERATE_TRAJECTORY;
+						 * 		case FORCED:
+						 * 			ventilator.respiration_state_machine = RESPIRATION_STATE_FORCED_VOLUME;
+						 * 			ventilator.forced_volume_state_machine = FORCED_VOLUME_STATE_GENERATE_TRAJECTORY;
+						 * 	}
+						 * 	ventilator.parameters_changed = 0;
+						 */
+						ventilator.parameters_changed = 0;
+						break;
 				}
-				else if (ventilator.calibration_state_machine == CALIBRATION_STATE_WIND)
-				{
-
-				}
-				else
-				{
-
-				}
-			}
-			else if (ventilator.setup_state_machine == SETUP_STATE_MANUAL_SPIN)
-			{
-				if (ventilator.manual_spin_state_machine == MANUAL_SPIN_STATE_UNWIND)
-				{
-
-				}
-				else if (ventilator.manual_spin_state_machine == MANUAL_SPIN_STATE_WIND)
-				{
-
-				}
-				else
-				{
-
-				}
-			}
-			else
-			{
-
-			}
+			case MAIN_STATE_STANDBY:
+				DCMotorStop(&dc_motor);
+				ventilator.cycle_counter = 0;
+				break;
 		}
-		else if (ventilator.main_state_machine == MAIN_STATE_RESPIRATION)
-		{
-			if (ventilator.respiration_state_machine == RESPIRATION_STATE_FORCED_VOLUME)
-			{
-				if (ventilator.forced_volume_state_machine == FORCED_VOLUME_STATE_GENERATE_TRAJECTORY)
-				{
-
-				}
-				else if (ventilator.forced_volume_state_machine == FORCED_VOLUME_STATE_INHALE)
-				{
-
-				}
-				else if (ventilator.forced_volume_state_machine == FORCED_VOLUME_STATE_INHALE_PAUSE)
-				{
-
-				}
-				else if (ventilator.forced_volume_state_machine == FORCED_VOLUME_STATE_EXHALE)
-				{
-
-				}
-				else if (ventilator.forced_volume_state_machine == FORCED_VOLUME_STATE_EXHALE_PAUSE)
-				{
-
-				}
-				else
-				{
-
-				}
-			}
-			else if (ventilator.respiration_state_machine == RESPIRATION_STATE_ASSISTED_VOLUME)
-			{
-				if (ventilator.assisted_volume_state_machine == ASSISTED_VOLUME_STATE_GENERATE_TRAJECTORY)
-				{
-
-				}
-				else if (ventilator.assisted_volume_state_machine == ASSISTED_VOLUME_STATE_WAIT_FOR_RESPIRATION)
-				{
-
-				}
-				else if (ventilator.assisted_volume_state_machine == ASSISTED_VOLUME_STATE_INHALE)
-				{
-
-				}
-				else if (ventilator.assisted_volume_state_machine == ASSISTED_VOLUME_STATE_INHALE_PAUSE)
-				{
-
-				}
-				else if (ventilator.assisted_volume_state_machine == ASSISTED_VOLUME_STATE_EXHALE)
-				{
-
-				}
-				else if (ventilator.assisted_volume_state_machine == ASSISTED_VOLUME_STATE_EXHALE_PAUSE)
-				{
-
-				}
-				else
-				{
-
-				}
-			}
-			else
-			{
-
-			}
-		}
-		else
-		{
-
-		}
+		osDelayUntil(&PreviousWakeTime, MAIN_ROUTINE_CYCLE_TIME_MS);
 	}
   /* USER CODE END mainRoutineFn */
 }
@@ -1106,6 +1198,7 @@ void userInputFn(void const * argument)
 	  HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_values, TOTAL_CONTROLS_COUNT);
 	  PotControlsValueUpdate(pot_controls_a, adc_values);
 	  UpdateVentilatorParams(&ventilator, pot_controls_a);
+	  ventilator.parameters_changed = 1;
 	  osThreadSuspend(userInputHandle);
 	}
   /* USER CODE END userInputFn */
