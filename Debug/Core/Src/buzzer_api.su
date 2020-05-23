@@ -1,2 +1,4 @@
 buzzer_api.c:10:6:BuzzerInit	16	static
-buzzer_api.c:17:6:BuzzerUpdateParams	24	static
+buzzer_api.c:19:6:BuzzerUpdateParams	56	static
+buzzer_api.c:58:6:BuzzerStart	16	static
+buzzer_api.c:63:6:BuzzerStop	16	static

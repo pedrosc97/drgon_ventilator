@@ -68,7 +68,7 @@ typedef enum VentilatorAlarms_E
 	ALARM_4 = 4,
 	ALARM_5 = 5,
 	ALARM_6 = 6,
-	ALARM_7 = 7,d
+	ALARM_7 = 7,
 } VentilatorAlarms_E;
 
 // State Machine States //////////////////////////////////////

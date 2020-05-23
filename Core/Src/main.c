@@ -210,6 +210,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		uint32_t	WakeTime = osKernelSysTick();
 		if ((WakeTime - ventilator.prev_systick) > BUTTON_INPUT_DEBOUNCE_PERIOD_MS)
 		{
+			switch(ventilator.ventilator_alarms_config)
+			{
+				case REPORT_ALARMS:
+					ventilator.ventilator_alarms_config = SILENCE_ALARMS;
+					break;
+				case SILENCE_ALARMS:
+					ventilator.ventilator_alarms_config = REPORT_ALARMS;
+					break;
+			}
 			ventilator.prev_systick = WakeTime;
 		}
 	}
@@ -284,7 +293,7 @@ int main(void)
   EncoderInit(&arm_encoder, TIM4, ARM_MODEL);
   LCDInit(&lcd_display, &hi2c1);
   PotControlsInit(pot_controls_a);
-  BuzzerInit(&buzzer);
+  BuzzerInit(&buzzer, &htim10);
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -1164,10 +1173,33 @@ void alarmMonitorFn(void const * argument)
 {
   /* USER CODE BEGIN alarmMonitorFn */
 	uint32_t PreviousWakeTime = osKernelSysTick();
+	BuzzerUpdateParams(&buzzer, 400, 0.5, 2);
 
   /* Infinite loop */
 	for(;;)
 	{
+		switch(ventilator.ventilator_alarms_config)
+		{
+			case REPORT_ALARMS:
+				if (buzzer.cycle_counter < (buzzer.alarm_period_ms / (2 * ALARM_MONITOR_CYCLE_TIME_MS)) )
+				{
+					BuzzerStart(&buzzer);
+					buzzer.cycle_counter++;
+				}
+				else if (buzzer.cycle_counter < (buzzer.alarm_period_ms / (ALARM_MONITOR_CYCLE_TIME_MS)) )
+				{
+					BuzzerStop(&buzzer);
+					buzzer.cycle_counter++;
+				}
+				else
+				{
+					buzzer.cycle_counter = 0;
+				}
+				break;
+			case SILENCE_ALARMS:
+				BuzzerStop(&buzzer);
+				break;
+		}
 		osDelayUntil(&PreviousWakeTime, ALARM_MONITOR_CYCLE_TIME_MS);
 	}
   /* USER CODE END alarmMonitorFn */
