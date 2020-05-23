@@ -46,7 +46,6 @@
 #define DIAGNOSTICS_SRV_CYCLE_TIME_MS		100
 #define CALIBRATION_IDLE_CYCLE_TIME_MS		100
 #define CALIBRATION_UNWIND_TIME_MS			3000
-#define MOTOR_DEBUG_VOLTAGE_VALUE			2.0f
 #define ALARM_MONITOR_CYCLE_TIME_MS			10
 #define ALARM_SILENCE_TIMEOUT_MS			2000
 #define MAIN_ROUTINE_CYCLE_TIME_MS			10
@@ -79,7 +78,6 @@ osThreadId mainRoutineHandle;
 osThreadId displayUIHandle;
 osThreadId motorEncoderHandle;
 osThreadId armEncoderHandle;
-osThreadId calibRoutineHandle;
 osThreadId diagnosticsSrvHandle;
 osThreadId userInputHandle;
 osThreadId alarmMonitorHandle;
@@ -113,7 +111,6 @@ void mainRoutineFn(void const * argument);
 void displayUIFn(void const * argument);
 void motorEncoderFn(void const * argument);
 void armEncoderFn(void const * argument);
-void calibRoutineFn(void const * argument);
 void diagnosticsSrvFn(void const * argument);
 void userInputFn(void const * argument);
 void alarmMonitorFn(void const * argument);
@@ -164,6 +161,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 									break;
 							}
 							break;
+						case SETUP_STATE_CALIBRATION:
+							break;
 					}
 					break;
 			}
@@ -195,7 +194,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 								ventilator.calibration_state_machine = CALIBRATION_STATE_WIND;
 							}
 							break;
+						case SETUP_STATE_MANUAL_SPIN:
+							break;
 					}
+					break;
+				case MAIN_STATE_RESPIRATION:
 					break;
 			}
 			ventilator.prev_systick = WakeTime;
@@ -320,10 +323,6 @@ int main(void)
   /* definition and creation of armEncoder */
   osThreadDef(armEncoder, armEncoderFn, osPriorityRealtime, 0, 128);
   armEncoderHandle = osThreadCreate(osThread(armEncoder), NULL);
-
-  /* definition and creation of calibRoutine */
-  osThreadDef(calibRoutine, calibRoutineFn, osPriorityRealtime, 0, 128);
-  calibRoutineHandle = osThreadCreate(osThread(calibRoutine), NULL);
 
   /* definition and creation of diagnosticsSrv */
   osThreadDef(diagnosticsSrv, diagnosticsSrvFn, osPriorityHigh, 0, 128);
@@ -898,7 +897,7 @@ void mainRoutineFn(void const * argument)
 							case CALIBRATION_STATE_UNWIND:
 								if (ventilator.cycle_counter == 0)
 								{
-									DCMotorVoltageSet(&dc_motor, -MOTOR_DEBUG_VOLTAGE_VALUE);
+									DCMotorVoltageSet(&dc_motor, &ventilator.debug_motor_voltage_neg);
 									ventilator.cycle_counter++;
 								}
 								else if (ventilator.cycle_counter < (CALIBRATION_UNWIND_TIME_MS / MAIN_ROUTINE_CYCLE_TIME_MS))
@@ -918,11 +917,11 @@ void mainRoutineFn(void const * argument)
 							case CALIBRATION_STATE_WIND:
 								if (ventilator.cycle_counter == 0)
 								{
-									uint32_t init_count = arm_encoder.timer->CNT;
-									DCMotorVoltageSet(&dc_motor, MOTOR_DEBUG_VOLTAGE_VALUE);
+									ventilator.arm_encoder_init_count = arm_encoder.timer->CNT;
+									DCMotorVoltageSet(&dc_motor, &ventilator.debug_motor_voltage_pos);
 									ventilator.cycle_counter++;
 								}
-								else if (arm_encoder.timer->CNT != init_count)
+								else if (arm_encoder.timer->CNT != ventilator.arm_encoder_init_count)
 								{
 									DCMotorStop(&dc_motor);
 									motor_encoder.timer->CNT = 0;
@@ -945,10 +944,10 @@ void mainRoutineFn(void const * argument)
 						switch(ventilator.manual_spin_state_machine)
 						{
 							case MANUAL_SPIN_STATE_UNWIND:
-								DCMotorVoltageSet(&dc_motor, -MOTOR_DEBUG_VOLTAGE_VALUE);
+								DCMotorVoltageSet(&dc_motor, &ventilator.debug_motor_voltage_neg);
 								break;
 							case MANUAL_SPIN_STATE_WIND:
-								DCMotorVoltageSet(&dc_motor, MOTOR_DEBUG_VOLTAGE_VALUE);
+								DCMotorVoltageSet(&dc_motor, &ventilator.debug_motor_voltage_pos);
 								break;
 							case MANUAL_SPIN_STATE_STOP:
 								DCMotorStop(&dc_motor);
@@ -975,6 +974,8 @@ void mainRoutineFn(void const * argument)
 								break;
 							case FORCED_VOLUME_STATE_EXHALE_PAUSE:
 								break;
+							case FORCED_VOLUME_STATE_STANDBY:
+								break;
 						}
 						break;
 					case RESPIRATION_STATE_ASSISTED_VOLUME:
@@ -991,6 +992,8 @@ void mainRoutineFn(void const * argument)
 							case ASSISTED_VOLUME_STATE_EXHALE:
 								break;
 							case ASSISTED_VOLUME_STATE_EXHALE_PAUSE:
+								break;
+							case ASSISTED_VOLUME_STATE_STANDBY:
 								break;
 						}
 						break;
@@ -1042,11 +1045,11 @@ void displayUIFn(void const * argument)
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 1, 0);
-		sprintf(buffer, "VOL %03u T4 %03u", ventilator.tidal_volume, TIM4->CNT);
+		sprintf(buffer, "VOL %03u T4 %03lu", ventilator.tidal_volume, TIM4->CNT);
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 2, 0);
-		sprintf(buffer, "PRS %03u T3 %03u", ventilator.pressure_level_alarm_value, TIM3->CNT);
+		sprintf(buffer, "PRS %03u T3 %03lu", ventilator.pressure_level_alarm_value, TIM3->CNT);
 		LCDSendString(&lcd_display, buffer);
 
 		LCDSetCursorPos(&lcd_display, 3, 0);
@@ -1100,60 +1103,6 @@ void armEncoderFn(void const * argument)
   /* USER CODE END armEncoderFn */
 }
 
-/* USER CODE BEGIN Header_calibRoutineFn */
-/**
-* @brief Function implementing the calibRoutine thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_calibRoutineFn */
-void calibRoutineFn(void const * argument)
-{
-  /* USER CODE BEGIN calibRoutineFn */
-	uint32_t	PreviousWakeTime = osKernelSysTick();
-	uint8_t 	calibration_state = 0;
-	uint32_t 	init_count = 0;
-	osThreadSuspend(calibRoutineHandle);
-	float 		motor_voltage_pos = MOTOR_DEBUG_VOLTAGE_VALUE;
-	float 		motor_voltage_neg = -MOTOR_DEBUG_VOLTAGE_VALUE;
-
-  /* Infinite loop */
-	for(;;)
-	{
-		if (calibration_state == 0)
-		{
-			osThreadSuspend(mainRoutineHandle);
-			PreviousWakeTime = osKernelSysTick();
-			DCMotorVoltageSet(&dc_motor, &motor_voltage_neg);
-			osDelayUntil(&PreviousWakeTime, CALIBRATION_UNWIND_TIME_MS);
-
-			dc_motor.direction_flag = MOTOR_SPIN_STOP;
-			DCMotorStop(&dc_motor);
-			osThreadSuspend(calibRoutineHandle);
-
-			init_count = arm_encoder.timer->CNT;
-			DCMotorVoltageSet(&dc_motor, &motor_voltage_pos);
-			calibration_state = 1;
-		}
-
-		if (arm_encoder.timer->CNT != init_count)
-		{
-			DCMotorStop(&dc_motor);
-			motor_encoder.timer->CNT = 0;
-			arm_encoder.timer->CNT = 0;
-			ToggleCalibrationParam(&ventilator);
-			calibration_state = 0;
-			osThreadResume(mainRoutineHandle);
-			osThreadSuspend(calibRoutineHandle);
-		}
-		else
-		{
-			osDelayUntil(&PreviousWakeTime, CALIBRATION_IDLE_CYCLE_TIME_MS);
-		}
-	}
-  /* USER CODE END calibRoutineFn */
-}
-
 /* USER CODE BEGIN Header_diagnosticsSrvFn */
 /**
 * @brief Function implementing the diagnosticsSrv thread.
@@ -1171,7 +1120,7 @@ void diagnosticsSrvFn(void const * argument)
   /* Infinite loop */
 	for(;;)
 	{
-		if ((ventilator.status_flags & ENABLE_ROUTINE) == ENABLE_ROUTINE)
+		if (ventilator.main_state_machine == MAIN_STATE_RESPIRATION)
 		{
 			//sprintf(buffer, "%04lu,%04lu,%04lu,%04u", HAL_GetTick(), TIM3->CNT, TIM4->CNT, dc_motor.pwm_value);
 			//HAL_UART_Transmit(&huart5, (uint8_t *) buffer, sizeof(buffer), 100);

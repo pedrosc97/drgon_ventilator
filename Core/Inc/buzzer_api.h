@@ -20,7 +20,7 @@ typedef struct Buzzer_S
 	TIM_HandleTypeDef	*timer;
 	uint16_t			sound_frequency_hz;
 	uint16_t			cycle_frequency_hz;
-	uint8_t				sound_volume_percentage;
+	float				sound_volume_percentage;
 } Buzzer_S;
 
 void BuzzerInit(Buzzer_S *buzzer_);

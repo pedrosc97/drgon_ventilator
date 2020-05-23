@@ -17,6 +17,8 @@
 #define PWM_PERIOD_VALUE				4200.0f
 #define ARM_SWEEP_ANGLE					21.6f
 
+#define MOTOR_DEBUG_VOLTAGE_VALUE		2.0f
+
 #define DEFAULT_INITIAL_ANGLE			0.0f
 
 #define TIDAL_VOLUME_INCREMENT			1.0f
@@ -147,6 +149,9 @@ typedef struct Ventilator_S
 	uint16_t	respiration_period_ms;
 	uint16_t	inhalation_period_ms;
 	uint16_t	exhalation_period_ms;
+	uint32_t	arm_encoder_init_count;
+	float 		debug_motor_voltage_pos;
+	float 		debug_motor_voltage_neg;
 	float		end_angle;
 
 	/* State Machines */

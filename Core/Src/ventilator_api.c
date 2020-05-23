@@ -14,6 +14,10 @@ void VentilatorInit(Ventilator_S *ventilator_)
 	ventilator_->pressure_level_alarm_value 	= (PressureValue_T) PRESSURE_LEVEL_ALARM_MIN_VAL;
 	ventilator_->tidal_volume 					= (TidalVolume_T) TIDAL_VOLUME_MIN_VAL;
 
+	ventilator_->arm_encoder_init_count 		= 0;
+	ventilator_->debug_motor_voltage_pos		= MOTOR_DEBUG_VOLTAGE_VALUE;
+	ventilator_->debug_motor_voltage_neg		= -MOTOR_DEBUG_VOLTAGE_VALUE;
+
 	ventilator_->ventilator_alarms 				= NO_ALARMS;
 	ventilator_->ventilator_alarms_config		= REPORT_ALARMS;
 
